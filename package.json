@@ -34,6 +34,7 @@
     "@scalar/nestjs-api-reference": "^1.1.2",
     "bcrypt": "^6.0.0",
     "dayjs": "^1.11.19",
+    "openai": "^6.27.0",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.0",
     "resend": "^6.9.3",
