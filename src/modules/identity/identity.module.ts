@@ -1,0 +1,60 @@
+import { Module } from '@nestjs/common'
+import { JwtModule } from '@nestjs/jwt'
+import { env } from '../../config/env'
+import { SubscriptionModule } from '../subscription/subscription.module'
+
+// Repositories
+import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository'
+import { PrismaRefreshTokenRepository } from './infrastructure/repositories/prisma-refresh-token.repository'
+import { PrismaEmailVerificationRepository } from './infrastructure/repositories/prisma-email-verification.repository'
+import { PrismaPasswordResetRepository } from './infrastructure/repositories/prisma-password-reset.repository'
+import { PrismaAuditLogRepository } from './infrastructure/repositories/prisma-audit-log.repository'
+
+// Services
+import { ResendEmailService } from './infrastructure/services/resend-email.service'
+
+// Use Cases
+import { RegisterUser } from './application/use-cases/RegisterUser'
+import { LoginUser } from './application/use-cases/LoginUser'
+import { RefreshTokens } from './application/use-cases/RefreshTokens'
+import { LogoutUser } from './application/use-cases/LogoutUser'
+import { ConfirmEmail } from './application/use-cases/ConfirmEmail'
+import { ResendConfirmation } from './application/use-cases/ResendConfirmation'
+import { ForgotPassword } from './application/use-cases/ForgotPassword'
+import { ResetPassword } from './application/use-cases/ResetPassword'
+import { GetMe } from './application/use-cases/GetMe'
+import { CompleteOnboarding } from './application/use-cases/CompleteOnboarding'
+
+// Controllers
+import { AuthController } from './presentation/controllers/auth.controller'
+import { UsersController } from './presentation/controllers/users.controller'
+
+@Module({
+  imports: [
+    SubscriptionModule,
+    JwtModule.register({
+      secret: env.JWT_SECRET,
+      signOptions: { expiresIn: 3600 },
+    }),
+  ],
+  providers: [
+    { provide: 'IUserRepository', useClass: PrismaUserRepository },
+    { provide: 'IRefreshTokenRepository', useClass: PrismaRefreshTokenRepository },
+    { provide: 'IEmailVerificationRepository', useClass: PrismaEmailVerificationRepository },
+    { provide: 'IPasswordResetRepository', useClass: PrismaPasswordResetRepository },
+    { provide: 'IAuditLogRepository', useClass: PrismaAuditLogRepository },
+    { provide: 'IEmailService', useClass: ResendEmailService },
+    RegisterUser,
+    LoginUser,
+    RefreshTokens,
+    LogoutUser,
+    ConfirmEmail,
+    ResendConfirmation,
+    ForgotPassword,
+    ResetPassword,
+    GetMe,
+    CompleteOnboarding,
+  ],
+  controllers: [AuthController, UsersController],
+})
+export class IdentityModule {}
