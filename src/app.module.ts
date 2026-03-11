@@ -7,6 +7,8 @@ import { DomainExceptionFilter } from './infra/http/filters/domain-exception.fil
 import { JwtAuthGuard } from './infra/http/guards/jwt-auth.guard'
 import { ThrottlerBehindProxyGuard } from './infra/http/guards/throttler-behind-proxy.guard'
 import { IdentityModule } from './modules/identity/identity.module'
+import { ClinicalCaseModule } from './modules/clinical-case/clinical-case.module'
+import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module'
 import { env } from './config/env'
 
 @Module({
@@ -20,6 +22,8 @@ import { env } from './config/env'
       { name: 'resend', ttl: 120000, limit: 1 },
     ]),
     IdentityModule,
+    ClinicalCaseModule,
+    ClinicalSessionModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: DomainExceptionFilter },

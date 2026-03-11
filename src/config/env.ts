@@ -12,6 +12,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.email(),
   APP_URL: z.string().min(1),
+  OPENAI_API_KEY: z.string().min(1),
 })
 
 export const env = envSchema.parse(process.env)
