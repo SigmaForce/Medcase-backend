@@ -30,6 +30,24 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
     return record ? this.toDomain(record) : null
   }
 
+  async update(subscription: Subscription): Promise<Subscription> {
+    const record = await this.prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        plan: subscription.plan,
+        status: subscription.status,
+        casesLimit: subscription.casesLimit,
+        casesUsed: subscription.casesUsed,
+        generationsLimit: subscription.generationsLimit,
+        generationsUsed: subscription.generationsUsed,
+        usageResetAt: subscription.usageResetAt,
+        provider: subscription.provider,
+        externalSubId: subscription.externalSubId,
+      },
+    })
+    return this.toDomain(record)
+  }
+
   private toDomain(record: {
     id: string
     userId: string
