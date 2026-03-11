@@ -42,6 +42,10 @@ model User {
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
   auditLogs          AuditLog[]
+  casesCreated       ClinicalCase[]      @relation("CasesCreated")
+  casesReviewed      ClinicalCase[]      @relation("CasesReviewed")
+  sessions           Session[]
+  studentPerformance StudentPerformance[]
 
   @@map("users")
 }
@@ -117,4 +121,144 @@ model AuditLog {
   user User? @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+// ─── Clinical Cases ────────────────────────────────────────────────────────────
+
+enum CaseDifficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum CaseLanguage {
+  pt
+  es
+}
+
+enum CountryContext {
+  BR
+  PY
+}
+
+enum CaseStatus {
+  draft
+  pending_review
+  approved
+  rejected
+  regenerating
+}
+
+model Specialty {
+  id      Int    @id @default(autoincrement())
+  slug    String @unique
+  namePt  String @map("name_pt")
+  nameEs  String @map("name_es")
+  icon    String?
+
+  clinicalCases      ClinicalCase[]
+  studentPerformance StudentPerformance[]
+
+  @@map("specialties")
+}
+
+model ClinicalCase {
+  id               String         @id @default(uuid()) @db.Uuid
+  specialtyId      Int            @map("specialty_id")
+  createdById      String         @map("created_by") @db.Uuid
+  reviewedById     String?        @map("reviewed_by") @db.Uuid
+  title            String
+  difficulty       CaseDifficulty
+  language         CaseLanguage
+  countryContext   CountryContext  @map("country_context")
+  status           CaseStatus     @default(pending_review)
+  caseBrief        Json           @map("case_brief")
+  availableExams   Json           @default("{}") @map("available_exams")
+  generationPrompt String?        @map("generation_prompt")
+  avgRating        Decimal        @default(0) @map("avg_rating") @db.Decimal(3, 2)
+  totalRatings     Int            @default(0) @map("total_ratings")
+  flaggedCount     Int            @default(0) @map("flagged_count")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  specialty  Specialty @relation(fields: [specialtyId], references: [id])
+  createdBy  User      @relation("CasesCreated", fields: [createdById], references: [id])
+  reviewedBy User?     @relation("CasesReviewed", fields: [reviewedById], references: [id])
+  sessions   Session[]
+
+  @@map("clinical_cases")
+}
+
+// ─── Sessions ──────────────────────────────────────────────────────────────────
+
+enum SessionStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+model Session {
+  id                  String        @id @default(uuid()) @db.Uuid
+  userId              String        @map("user_id") @db.Uuid
+  caseId              String        @map("case_id") @db.Uuid
+  status              SessionStatus @default(in_progress)
+  submittedDiagnosis  String?       @map("submitted_diagnosis")
+  submittedManagement String?       @map("submitted_management")
+  feedback            Json?
+  requestedExams      String[]      @default([]) @map("requested_exams")
+  missedKeyExams      String[]      @default([]) @map("missed_key_exams")
+  startedAt           DateTime      @default(now()) @map("started_at")
+  completedAt         DateTime?     @map("completed_at")
+  durationSecs        Int?          @map("duration_secs")
+  isTimed             Boolean       @default(false) @map("is_timed")
+  timedLimitSecs      Int           @default(2700) @map("timed_limit_secs")
+
+  user     User         @relation(fields: [userId], references: [id])
+  case     ClinicalCase @relation(fields: [caseId], references: [id])
+  messages Message[]
+
+  @@unique([userId, caseId], name: "one_active_per_case")
+  @@map("sessions")
+}
+
+model Message {
+  id        String      @id @default(uuid()) @db.Uuid
+  sessionId String      @map("session_id") @db.Uuid
+  role      MessageRole
+  content   String
+  meta      Json        @default("{}")
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ─── Student Performance ───────────────────────────────────────────────────────
+
+model StudentPerformance {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  specialtyId     Int      @map("specialty_id")
+  totalSessions   Int      @default(0) @map("total_sessions")
+  avgScoreTotal   Decimal  @default(0) @map("avg_score_total") @db.Decimal(5, 2)
+  avgHistoryTaking Decimal @default(0) @map("avg_history_taking") @db.Decimal(5, 2)
+  avgDifferential  Decimal @default(0) @map("avg_differential") @db.Decimal(5, 2)
+  avgDiagnosis     Decimal @default(0) @map("avg_diagnosis") @db.Decimal(5, 2)
+  avgExams         Decimal @default(0) @map("avg_exams") @db.Decimal(5, 2)
+  avgManagement    Decimal @default(0) @map("avg_management") @db.Decimal(5, 2)
+  lastSessionAt    DateTime? @map("last_session_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+  specialty Specialty @relation(fields: [specialtyId], references: [id])
+
+  @@unique([userId, specialtyId], name: "unique_perf")
+  @@map("student_performance")
 }
