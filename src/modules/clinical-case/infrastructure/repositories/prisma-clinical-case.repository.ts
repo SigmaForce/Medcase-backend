@@ -105,6 +105,36 @@ export class PrismaClinicalCaseRepository implements IClinicalCaseRepository {
     return this.toDomain(record)
   }
 
+  async update(clinicalCase: ClinicalCase): Promise<ClinicalCase> {
+    const record = await this.prisma.clinicalCase.update({
+      where: { id: clinicalCase.id },
+      data: {
+        status: clinicalCase.status,
+        avgRating: clinicalCase.avgRating,
+        totalRatings: clinicalCase.totalRatings,
+        flaggedCount: clinicalCase.flaggedCount,
+        reviewedById: clinicalCase.reviewedById,
+      },
+      include: { specialty: true },
+    })
+    return this.toDomain(record)
+  }
+
+  async updateContent(
+    id: string,
+    data: { caseBrief: Record<string, unknown>; availableExams: Record<string, unknown> },
+  ): Promise<ClinicalCase> {
+    const record = await this.prisma.clinicalCase.update({
+      where: { id },
+      data: {
+        caseBrief: data.caseBrief as Prisma.InputJsonValue,
+        availableExams: data.availableExams as Prisma.InputJsonValue,
+      },
+      include: { specialty: true },
+    })
+    return this.toDomain(record)
+  }
+
   private toDomain(record: PrismaClinicalCaseRecord): ClinicalCase {
     return ClinicalCase.create({
       id: record.id,
