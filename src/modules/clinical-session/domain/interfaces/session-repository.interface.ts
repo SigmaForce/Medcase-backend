@@ -56,4 +56,5 @@ export interface ISessionRepository {
     specialtyId: number
     feedback: FeedbackData
   }): Promise<void>
+  findCompletedByUserAndCase(userId: string, caseId: string): Promise<boolean>
 }
