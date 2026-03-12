@@ -253,6 +253,13 @@ export class PrismaSessionRepository implements ISessionRepository {
     })
   }
 
+  async findCompletedByUserAndCase(userId: string, caseId: string): Promise<boolean> {
+    const count = await this.prisma.session.count({
+      where: { userId, caseId, status: 'completed' },
+    })
+    return count > 0
+  }
+
   private mapMessage(record: {
     id: string
     sessionId: string
