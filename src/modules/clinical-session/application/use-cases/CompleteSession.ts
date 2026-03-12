@@ -4,6 +4,8 @@ import { DomainException } from '../../../../errors/domain-exception'
 import { completeSessionSchema } from '../dtos/complete-session.dto'
 import { FeedbackGeneratorService } from '../../infrastructure/services/feedback-generator.service'
 import { PerformanceUpdaterService } from '../../infrastructure/services/performance-updater.service'
+import { StreakUpdaterService } from '../../infrastructure/services/streak-updater.service'
+import { BadgeAwarderService } from '../../infrastructure/services/badge-awarder.service'
 import { Exam } from '../../../clinical-case/domain/value-objects/available-exams.vo'
 
 export interface CompleteSessionInput {
@@ -33,6 +35,8 @@ export class CompleteSession {
     @Inject('ISessionRepository') private readonly sessionRepo: ISessionRepository,
     private readonly feedbackGenerator: FeedbackGeneratorService,
     private readonly performanceUpdater: PerformanceUpdaterService,
+    private readonly streakUpdater: StreakUpdaterService,
+    private readonly badgeAwarder: BadgeAwarderService,
   ) {}
 
   async execute(input: CompleteSessionInput): Promise<CompleteSessionOutput> {
@@ -109,6 +113,9 @@ export class CompleteSession {
         dimensions: feedback.dimensions,
       },
     })
+
+    const streak = await this.streakUpdater.update({ userId: input.userId })
+    await this.badgeAwarder.award({ userId: input.userId, streak, scoreTotal: feedback.score_total })
 
     const feedbackResponse =
       subscription.plan === 'pro'

@@ -72,6 +72,10 @@ const mockRepo = {
 
 const mockFeedbackGenerator = { generate: jest.fn() }
 const mockPerformanceUpdater = { update: jest.fn() }
+const mockStreakUpdater = { update: jest.fn() }
+const mockBadgeAwarder = { award: jest.fn() }
+
+const mockStreak = { userId: USER_ID, currentStreak: 1, longestStreak: 1, totalSessions: 1, lastActivityAt: new Date() }
 
 describe('CompleteSession', () => {
   let useCase: CompleteSession
@@ -82,6 +86,8 @@ describe('CompleteSession', () => {
       mockRepo as never,
       mockFeedbackGenerator as never,
       mockPerformanceUpdater as never,
+      mockStreakUpdater as never,
+      mockBadgeAwarder as never,
     )
   })
 
@@ -94,6 +100,8 @@ describe('CompleteSession', () => {
     mockFeedbackGenerator.generate.mockResolvedValue(mockFeedback)
     mockRepo.update.mockResolvedValue({ ...session, status: 'completed', completedAt: new Date(), durationSecs: 120, missedKeyExams: ['ecg'] })
     mockPerformanceUpdater.update.mockResolvedValue(undefined)
+    mockStreakUpdater.update.mockResolvedValue(mockStreak)
+    mockBadgeAwarder.award.mockResolvedValue([])
 
     const result = await useCase.execute(validInput)
 
@@ -101,6 +109,8 @@ describe('CompleteSession', () => {
     expect(result.feedback).toHaveProperty('dimensions')
     expect(session.complete).toHaveBeenCalledTimes(1)
     expect(mockPerformanceUpdater.update).toHaveBeenCalledTimes(1)
+    expect(mockStreakUpdater.update).toHaveBeenCalledWith({ userId: USER_ID })
+    expect(mockBadgeAwarder.award).toHaveBeenCalledTimes(1)
   })
 
   it('returns only score_total and correct_diagnosis for free user', async () => {
@@ -112,6 +122,8 @@ describe('CompleteSession', () => {
     mockFeedbackGenerator.generate.mockResolvedValue(mockFeedback)
     mockRepo.update.mockResolvedValue({ ...session, status: 'completed', completedAt: new Date(), durationSecs: 120, missedKeyExams: [] })
     mockPerformanceUpdater.update.mockResolvedValue(undefined)
+    mockStreakUpdater.update.mockResolvedValue(mockStreak)
+    mockBadgeAwarder.award.mockResolvedValue([])
 
     const result = await useCase.execute(validInput)
 
