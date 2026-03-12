@@ -46,6 +46,10 @@ model User {
   casesReviewed      ClinicalCase[]      @relation("CasesReviewed")
   sessions           Session[]
   studentPerformance StudentPerformance[]
+  caseRatings        CaseRating[]
+  reviewedQueueItems CaseReviewQueue[]   @relation("ReviewedBy")
+  badges             UserBadge[]
+  streak             UserStreak?
 
   @@map("users")
 }
@@ -181,10 +185,12 @@ model ClinicalCase {
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
-  specialty  Specialty @relation(fields: [specialtyId], references: [id])
-  createdBy  User      @relation("CasesCreated", fields: [createdById], references: [id])
-  reviewedBy User?     @relation("CasesReviewed", fields: [reviewedById], references: [id])
-  sessions   Session[]
+  specialty   Specialty         @relation(fields: [specialtyId], references: [id])
+  createdBy   User              @relation("CasesCreated", fields: [createdById], references: [id])
+  reviewedBy  User?             @relation("CasesReviewed", fields: [reviewedById], references: [id])
+  sessions    Session[]
+  ratings     CaseRating[]
+  reviewQueue CaseReviewQueue[]
 
   @@map("clinical_cases")
 }
@@ -261,4 +267,66 @@ model StudentPerformance {
 
   @@unique([userId, specialtyId], name: "unique_perf")
   @@map("student_performance")
+}
+
+// ─── Curation ──────────────────────────────────────────────────────────────────
+
+model CaseRating {
+  id        String   @id @default(uuid()) @db.Uuid
+  caseId    String   @map("case_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  score     Int
+  issues    String[] @default([])
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  case ClinicalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId], name: "one_rating_per_case")
+  @@map("case_ratings")
+}
+
+model CaseReviewQueue {
+  id           String    @id @default(uuid()) @db.Uuid
+  caseId       String    @map("case_id") @db.Uuid
+  reviewedById String?   @map("reviewed_by") @db.Uuid
+  status       String    @default("pending")
+  regenerations Int      @default(0)
+  reviewedAt   DateTime? @map("reviewed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  case       ClinicalCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  reviewedBy User?        @relation("ReviewedBy", fields: [reviewedById], references: [id])
+
+  @@map("case_review_queue")
+}
+
+// ─── Gamification ──────────────────────────────────────────────────────────────
+
+model UserBadge {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  badgeSlug String   @map("badge_slug")
+  earnedAt  DateTime @default(now()) @map("earned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeSlug], name: "unique_badge")
+  @@map("user_badges")
+}
+
+model UserStreak {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @unique @map("user_id") @db.Uuid
+  currentStreak Int       @default(0) @map("current_streak")
+  longestStreak Int       @default(0) @map("longest_streak")
+  lastActivityAt DateTime? @map("last_activity_at")
+  totalSessions Int       @default(0) @map("total_sessions")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
 }
