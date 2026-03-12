@@ -25,6 +25,16 @@ import { ResetPassword } from './application/use-cases/ResetPassword'
 import { GetMe } from './application/use-cases/GetMe'
 import { CompleteOnboarding } from './application/use-cases/CompleteOnboarding'
 
+// Gamification & Performance Repositories
+import { PrismaUserStreakRepository } from './infrastructure/repositories/prisma-user-streak.repository'
+import { PrismaUserBadgeRepository } from './infrastructure/repositories/prisma-user-badge.repository'
+import { PrismaStudentPerformanceRepository } from './infrastructure/repositories/prisma-student-performance.repository'
+
+// Gamification & Performance Use Cases
+import { GetPerformance } from './application/use-cases/GetPerformance'
+import { GetPerformanceBySpecialty } from './application/use-cases/GetPerformanceBySpecialty'
+import { GetStats } from './application/use-cases/GetStats'
+
 // Controllers
 import { AuthController } from './presentation/controllers/auth.controller'
 import { UsersController } from './presentation/controllers/users.controller'
@@ -44,6 +54,9 @@ import { UsersController } from './presentation/controllers/users.controller'
     { provide: 'IPasswordResetRepository', useClass: PrismaPasswordResetRepository },
     { provide: 'IAuditLogRepository', useClass: PrismaAuditLogRepository },
     { provide: 'IEmailService', useClass: ResendEmailService },
+    { provide: 'IUserStreakRepository', useClass: PrismaUserStreakRepository },
+    { provide: 'IUserBadgeRepository', useClass: PrismaUserBadgeRepository },
+    { provide: 'IStudentPerformanceRepository', useClass: PrismaStudentPerformanceRepository },
     RegisterUser,
     LoginUser,
     RefreshTokens,
@@ -54,7 +67,11 @@ import { UsersController } from './presentation/controllers/users.controller'
     ResetPassword,
     GetMe,
     CompleteOnboarding,
+    GetPerformance,
+    GetPerformanceBySpecialty,
+    GetStats,
   ],
   controllers: [AuthController, UsersController],
+  exports: ['IUserStreakRepository', 'IUserBadgeRepository', 'IStudentPerformanceRepository'],
 })
 export class IdentityModule {}
