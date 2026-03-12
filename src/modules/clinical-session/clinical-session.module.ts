@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { IdentityModule } from '../identity/identity.module'
 
 // Repository
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository'
@@ -12,6 +13,8 @@ import { ExamMatchService } from './infrastructure/services/exam-match.service'
 import { ChatOrchestratorService } from './infrastructure/services/chat-orchestrator.service'
 import { FeedbackGeneratorService } from './infrastructure/services/feedback-generator.service'
 import { PerformanceUpdaterService } from './infrastructure/services/performance-updater.service'
+import { StreakUpdaterService } from './infrastructure/services/streak-updater.service'
+import { BadgeAwarderService } from './infrastructure/services/badge-awarder.service'
 
 // Use Cases
 import { StartSession } from './application/use-cases/StartSession'
@@ -27,6 +30,7 @@ import { MessageController } from './presentation/controllers/message.controller
 import { CompleteController } from './presentation/controllers/complete.controller'
 
 @Module({
+  imports: [IdentityModule],
   providers: [
     { provide: 'ISessionRepository', useClass: PrismaSessionRepository },
     OpenAiAdapter,
@@ -37,6 +41,8 @@ import { CompleteController } from './presentation/controllers/complete.controll
     ChatOrchestratorService,
     FeedbackGeneratorService,
     PerformanceUpdaterService,
+    StreakUpdaterService,
+    BadgeAwarderService,
     StartSession,
     SendMessage,
     CompleteSession,
@@ -45,5 +51,6 @@ import { CompleteController } from './presentation/controllers/complete.controll
     ListSessions,
   ],
   controllers: [SessionController, MessageController, CompleteController],
+  exports: ['ISessionRepository'],
 })
 export class ClinicalSessionModule {}
