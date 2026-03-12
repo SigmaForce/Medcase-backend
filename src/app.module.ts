@@ -9,6 +9,7 @@ import { ThrottlerBehindProxyGuard } from './infra/http/guards/throttler-behind-
 import { IdentityModule } from './modules/identity/identity.module'
 import { ClinicalCaseModule } from './modules/clinical-case/clinical-case.module'
 import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module'
+import { CurationModule } from './modules/curation/curation.module'
 import { env } from './config/env'
 
 @Module({
@@ -24,6 +25,7 @@ import { env } from './config/env'
     IdentityModule,
     ClinicalCaseModule,
     ClinicalSessionModule,
+    CurationModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: DomainExceptionFilter },
