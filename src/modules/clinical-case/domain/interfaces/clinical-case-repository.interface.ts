@@ -22,4 +22,9 @@ export interface IClinicalCaseRepository {
   findAll(filters: ListCasesFilters): Promise<ListCasesResult>
   findById(id: string): Promise<ClinicalCase | null>
   create(clinicalCase: ClinicalCase): Promise<ClinicalCase>
+  update(clinicalCase: ClinicalCase): Promise<ClinicalCase>
+  updateContent(
+    id: string,
+    data: { caseBrief: Record<string, unknown>; availableExams: Record<string, unknown> },
+  ): Promise<ClinicalCase>
 }
