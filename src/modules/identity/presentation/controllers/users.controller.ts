@@ -1,9 +1,12 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.pipe'
 import { GetMe } from '../../application/use-cases/GetMe'
 import { CompleteOnboarding } from '../../application/use-cases/CompleteOnboarding'
+import { GetPerformance } from '../../application/use-cases/GetPerformance'
+import { GetPerformanceBySpecialty } from '../../application/use-cases/GetPerformanceBySpecialty'
+import { GetStats } from '../../application/use-cases/GetStats'
 import { completeOnboardingSchema } from '../../application/dtos/complete-onboarding.dto'
 
 @ApiTags('Users')
@@ -13,6 +16,9 @@ export class UsersController {
   constructor(
     private readonly getMe: GetMe,
     private readonly completeOnboarding: CompleteOnboarding,
+    private readonly getPerformance: GetPerformance,
+    private readonly getPerformanceBySpecialty: GetPerformanceBySpecialty,
+    private readonly getStats: GetStats,
   ) {}
 
   @Get('me')
@@ -36,6 +42,30 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
   async me(@CurrentUser() user: JwtPayload) {
     return this.getMe.execute(user.sub)
+  }
+
+  @Get('me/performance')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Dashboard de performance', description: 'Retorna performance do aluno por especialidade.' })
+  async performance(@CurrentUser() user: JwtPayload) {
+    return this.getPerformance.execute({ userId: user.sub })
+  }
+
+  @Get('me/performance/:specialty_id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Performance por especialidade', description: 'Detalhe de performance em uma especialidade.' })
+  async performanceBySpecialty(
+    @Param('specialty_id', ParseIntPipe) specialtyId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.getPerformanceBySpecialty.execute({ userId: user.sub, specialtyId })
+  }
+
+  @Get('me/stats')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Estatísticas e conquistas', description: 'Retorna streak, badges e totais do aluno.' })
+  async stats(@CurrentUser() user: JwtPayload) {
+    return this.getStats.execute({ userId: user.sub })
   }
 
   @Patch('me/onboarding')
