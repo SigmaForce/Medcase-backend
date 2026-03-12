@@ -33,5 +33,6 @@ import { SpecialtyController } from './presentation/controllers/specialty.contro
     ListSpecialties,
   ],
   controllers: [CaseController, CaseGenerateController, SpecialtyController],
+  exports: ['IClinicalCaseRepository', 'ISpecialtyRepository', CaseGeneratorService],
 })
 export class ClinicalCaseModule {}
