@@ -42,6 +42,7 @@ export interface ISessionRepository {
   create(session: ClinicalSession): Promise<ClinicalSession>
   findById(id: string): Promise<ClinicalSession | null>
   findByUserAndCase(userId: string, caseId: string): Promise<ClinicalSession | null>
+  findInProgressByUserAndCase(userId: string, caseId: string): Promise<ClinicalSession | null>
   findByUser(userId: string, filters: SessionListFilters): Promise<SessionListResult>
   update(session: ClinicalSession): Promise<ClinicalSession>
   addMessage(message: MessageTurn): Promise<MessageTurn>

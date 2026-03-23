@@ -37,37 +37,44 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  subscription       Subscription?
-  refreshTokens      RefreshToken[]
-  emailVerifications EmailVerification[]
-  passwordResets     PasswordReset[]
-  auditLogs          AuditLog[]
-  casesCreated       ClinicalCase[]      @relation("CasesCreated")
-  casesReviewed      ClinicalCase[]      @relation("CasesReviewed")
-  sessions           Session[]
-  studentPerformance StudentPerformance[]
-  caseRatings        CaseRating[]
-  reviewedQueueItems CaseReviewQueue[]   @relation("ReviewedBy")
-  badges             UserBadge[]
-  streak             UserStreak?
+  subscription        Subscription?
+  refreshTokens       RefreshToken[]
+  emailVerifications  EmailVerification[]
+  passwordResets      PasswordReset[]
+  auditLogs           AuditLog[]
+  casesCreated        ClinicalCase[]      @relation("CasesCreated")
+  casesReviewed       ClinicalCase[]      @relation("CasesReviewed")
+  sessions            Session[]
+  studentPerformance  StudentPerformance[]
+  caseRatings         CaseRating[]
+  reviewedQueueItems  CaseReviewQueue[]   @relation("ReviewedBy")
+  badges              UserBadge[]
+  streak              UserStreak?
+  inviteCodesCreated  InviteCode[]        @relation("InviteCodesCreated")
+  inviteCodesUsed     InviteCode?         @relation("InviteCodesUsed")
 
   @@map("users")
 }
 
 model Subscription {
-  id               String             @id @default(uuid()) @db.Uuid
-  userId           String             @unique @map("user_id") @db.Uuid
-  plan             SubscriptionPlan   @default(free)
-  status           SubscriptionStatus @default(active)
-  casesLimit       Int                @default(5) @map("cases_limit")
-  casesUsed        Int                @default(0) @map("cases_used")
-  generationsLimit Int                @default(0) @map("generations_limit")
-  generationsUsed  Int                @default(0) @map("generations_used")
-  usageResetAt     DateTime           @map("usage_reset_at")
-  provider         String?
-  externalSubId    String?            @map("external_sub_id")
-  createdAt        DateTime           @default(now()) @map("created_at")
-  updatedAt        DateTime           @updatedAt @map("updated_at")
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @map("user_id") @db.Uuid
+  plan              SubscriptionPlan   @default(free)
+  status            SubscriptionStatus @default(active)
+  casesLimit        Int                @default(5) @map("cases_limit")
+  casesUsed         Int                @default(0) @map("cases_used")
+  generationsLimit  Int                @default(0) @map("generations_limit")
+  generationsUsed   Int                @default(0) @map("generations_used")
+  usageResetAt      DateTime           @map("usage_reset_at")
+  provider          String?
+  externalSubId     String?            @map("external_sub_id")
+  externalCustomer  String?            @map("external_customer")
+  trialEndsAt       DateTime?          @map("trial_ends_at")
+  cancelAt          DateTime?          @map("cancel_at")
+  currentPeriodEnd  DateTime?          @map("current_period_end")
+  cancelAtPeriodEnd Boolean            @default(false) @map("cancel_at_period_end")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -229,7 +236,6 @@ model Session {
   case     ClinicalCase @relation(fields: [caseId], references: [id])
   messages Message[]
 
-  @@unique([userId, caseId], name: "one_active_per_case")
   @@map("sessions")
 }
 
@@ -329,4 +335,54 @@ model UserStreak {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_streaks")
+}
+
+// ─── Phase 4: Payments, Invites, Analytics ────────────────────────────────────
+
+model PaymentEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  provider    String
+  eventType   String   @map("event_type")
+  externalId  String   @map("external_id")
+  amountCents Int?     @map("amount_cents")
+  currency    String?
+  status      String?
+  rawPayload  Json     @map("raw_payload")
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@unique([provider, externalId], name: "unique_external_event")
+  @@map("payment_events")
+}
+
+model InviteCode {
+  id          String    @id @default(uuid()) @db.Uuid
+  code        String    @unique
+  createdById String    @map("created_by") @db.Uuid
+  usedById    String?   @unique @map("used_by") @db.Uuid
+  label       String?
+  trialDays   Int       @default(30) @map("trial_days")
+  expiresAt   DateTime  @map("expires_at") @db.Date
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  createdBy User  @relation("InviteCodesCreated", fields: [createdById], references: [id])
+  usedBy    User? @relation("InviteCodesUsed", fields: [usedById], references: [id])
+
+  @@map("invite_codes")
+}
+
+model UsageMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String?  @map("session_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  operation    String
+  model        String
+  tokensInput  Int      @map("tokens_input")
+  tokensOutput Int      @map("tokens_output")
+  latencyMs    Int?     @map("latency_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@map("usage_metrics")
 }

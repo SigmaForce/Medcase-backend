@@ -92,7 +92,14 @@ REGRAS DO CASO:
 - O idioma de todo o conteúdo deve ser "${input.language}" (pt=português, es=espanhol)
 - O diagnóstico real NUNCA deve aparecer na apresentação do paciente
 - Os exames devem ter resultados coerentes com o diagnóstico real
-- Marque como is_key=true os exames essenciais para o diagnóstico`
+- Marque como is_key=true os exames essenciais para o diagnóstico
+- O campo "result" de cada exame deve ser um laudo clínico detalhado com:
+  * Valores numéricos reais com unidades (ex: Leucócitos: 14.200/mm³)
+  * Valores de referência entre parênteses (ex: VR: 4.000–11.000/mm³)
+  * Para exames de imagem: descrição radiológica objetiva (localização, tamanho, características morfológicas)
+  * Para ECG: ritmo, frequência, eixo, alterações de segmento/onda descritas objetivamente
+  * NUNCA inclua conclusão diagnóstica, hipótese ou impressão que revele o diagnóstico — apenas achados objetivos
+  * NUNCA use resultados vagos como "alterado" ou "dentro do esperado" sem valores`
   }
 
   private buildUserPrompt(input: GenerateInput): string {
@@ -119,8 +126,8 @@ Retorne o JSON no seguinte formato:
     "context": "Contexto social relevante"
   },
   "available_exams": {
-    "laboratory": [{ "slug": "hemograma", "name": "Hemograma completo", "result": "...", "is_key": false, "category": "laboratory" }],
-    "imaging": [{ "slug": "rx_torax", "name": "Radiografia de tórax PA", "result": "...", "is_key": true, "category": "imaging" }],
+    "laboratory": [{ "slug": "hemograma", "name": "Hemograma completo", "result": "Leucócitos: 14.200/mm³ (VR: 4.000–11.000) com neutrófilos 82% e desvio à esquerda (bastões 12%). Hemoglobina: 11,2 g/dL (VR: 12–16). Hematócrito: 34% (VR: 36–46%). Plaquetas: 420.000/mm³ (VR: 150.000–400.000).", "is_key": true, "category": "laboratory" }],
+    "imaging": [{ "slug": "rx_torax", "name": "Radiografia de tórax PA", "result": "Opacidade heterogênea no lobo superior direito com broncograma aéreo visível. Seios costofrênicos livres. Área cardíaca com ICT 0,48. Traqueia centrada.", "is_key": true, "category": "imaging" }],
     "ecg": [],
     "other": []
   }
@@ -211,8 +218,8 @@ Retorne o JSON no seguinte formato:
     }
 
     const keyExams = allExams.filter((e) => e.is_key)
-    if (keyExams.length < 2) {
-      throw new Error('At least 2 exams must have is_key = true')
+    if (keyExams.length < 1) {
+      throw new Error('At least 1 exam must have is_key = true')
     }
 
     const slugs = allExams.map((e) => e.slug)

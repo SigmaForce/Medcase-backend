@@ -13,6 +13,7 @@ const mockUserRepo = {
   update: jest.fn(),
 }
 const mockAuditLogRepo = { log: jest.fn() }
+const mockEventEmitter = { emit: jest.fn() }
 
 const makeVerification = (overrides: Partial<EmailVerification> = {}): EmailVerification => {
   const ev = EmailVerification.create('user-1', 'hash')
@@ -39,6 +40,7 @@ describe('ConfirmEmail', () => {
       mockEmailVerificationRepo as any,
       mockUserRepo as any,
       mockAuditLogRepo as any,
+      mockEventEmitter as any,
     )
   })
 
@@ -91,5 +93,6 @@ describe('ConfirmEmail', () => {
     expect(mockAuditLogRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.email_confirmed' }),
     )
+    expect(mockEventEmitter.emit).toHaveBeenCalledWith('user.email_confirmed', { userId: user.id })
   })
 })

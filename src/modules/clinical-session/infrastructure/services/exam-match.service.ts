@@ -37,4 +37,11 @@ export class ExamMatchService {
     const lines = exams.map((e) => `- ${e.name}: ${e.result}`)
     return `\n\n[RESULTADOS DE EXAMES SOLICITADOS]\n${lines.join('\n')}\n`
   }
+
+  buildExamReport(exams: Exam[]): string {
+    if (exams.length === 0) return ''
+
+    const sections = exams.map((e) => `**${e.name.toUpperCase()}**\n${e.result}`)
+    return `📋 **RESULTADO DE EXAME**\n\n${sections.join('\n\n---\n\n')}`
+  }
 }

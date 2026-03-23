@@ -54,7 +54,7 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ register: { limit: 3, ttl: 3600000 } })
+  @Throttle({ register: { limit: 20, ttl: 3600000 } })
   @ApiOperation({ summary: 'Criar conta', description: 'Registra um novo usuário na plataforma.' })
   @ApiBody({
     schema: {
@@ -90,7 +90,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ login: { limit: 10, ttl: 900000 } })
+  @Throttle({ login: { limit: 50, ttl: 900000 } })
   @ApiOperation({ summary: 'Autenticar', description: 'Autentica o usuário e retorna access + refresh tokens.' })
   @ApiBody({
     schema: {
@@ -135,7 +135,7 @@ export class AuthController {
   @Post('resend-confirmation')
   @HttpCode(HttpStatus.OK)
   @UseGuards(EmailThrottlerGuard)
-  @Throttle({ resend: { limit: 1, ttl: 120000 } })
+  @Throttle({ resend: { limit: 10, ttl: 120000 } })
   @ApiOperation({ summary: 'Reenviar confirmação', description: 'Reenvia o e-mail de confirmação de conta.' })
   @ApiBody({
     schema: {
@@ -196,7 +196,7 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @UseGuards(EmailThrottlerGuard)
-  @Throttle({ forgot: { limit: 3, ttl: 3600000 } })
+  @Throttle({ forgot: { limit: 20, ttl: 3600000 } })
   @ApiOperation({ summary: 'Solicitar reset de senha', description: 'Envia um link de redefinição de senha para o e-mail informado.' })
   @ApiBody({
     schema: {

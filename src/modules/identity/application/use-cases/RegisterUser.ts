@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../../../infra/database/prisma.service";
 import { IUserRepository } from "../../domain/interfaces/user-repository.interface";
 import { ISubscriptionRepository } from "../../../subscription/domain/interfaces/subscription-repository.interface";
+import { IInviteCodeRepository } from "../../../subscription/domain/interfaces/invite-code-repository.interface";
 import { IEmailVerificationRepository } from "../../domain/interfaces/email-verification-repository.interface";
 import { IEmailService } from "../../domain/interfaces/email-service.interface";
 import { IAuditLogRepository } from "../../domain/interfaces/audit-log-repository.interface";
@@ -15,6 +16,7 @@ import { Password } from "../../domain/value-objects/password.vo";
 import { DomainException } from "../../../../errors/domain-exception";
 import { registerUserSchema } from "../dtos/register-user.dto";
 import { UserResponseDto } from "../dtos/user-response.dto";
+import { PostHogService } from "../../../analytics/infrastructure/services/posthog.service";
 import { env } from "src/config/env";
 
 export interface RegisterUserInput {
@@ -23,6 +25,7 @@ export interface RegisterUserInput {
   fullName: string;
   country: string;
   university: string;
+  invite_code?: string;
   ipAddress?: string;
 }
 
@@ -37,12 +40,15 @@ export class RegisterUser {
     @Inject("IUserRepository") private readonly userRepo: IUserRepository,
     @Inject("ISubscriptionRepository")
     private readonly subscriptionRepo: ISubscriptionRepository,
+    @Inject("IInviteCodeRepository")
+    private readonly inviteCodeRepo: IInviteCodeRepository,
     @Inject("IEmailVerificationRepository")
     private readonly emailVerificationRepo: IEmailVerificationRepository,
     @Inject("IEmailService") private readonly emailService: IEmailService,
     @Inject("IAuditLogRepository")
     private readonly auditLogRepo: IAuditLogRepository,
     private readonly prisma: PrismaService,
+    private readonly postHogService: PostHogService,
   ) {}
 
   async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
@@ -52,6 +58,13 @@ export class RegisterUser {
 
     const existing = await this.userRepo.findByEmail(data.email);
     if (existing) throw new DomainException("EMAIL_ALREADY_EXISTS");
+
+    let inviteTrialDays: number | null = null;
+    if (data.invite_code) {
+      const invite = await this.inviteCodeRepo.findValid(data.invite_code);
+      if (!invite) throw new DomainException("INVALID_OR_EXPIRED_INVITE");
+      inviteTrialDays = invite.trialDays;
+    }
 
     const passwordHash = await bcrypt.hash(
       data.password,
@@ -80,7 +93,11 @@ export class RegisterUser {
           },
         });
 
-        const subscription = Subscription.createFree(dbUser.id);
+        const subscription =
+          inviteTrialDays !== null
+            ? Subscription.createTrial(dbUser.id, inviteTrialDays)
+            : Subscription.createFree(dbUser.id);
+
         await tx.subscription.create({
           data: {
             userId: dbUser.id,
@@ -91,8 +108,14 @@ export class RegisterUser {
             generationsLimit: subscription.generationsLimit,
             generationsUsed: subscription.generationsUsed,
             usageResetAt: subscription.usageResetAt,
+            trialEndsAt: subscription.trialEndsAt,
           },
         });
+
+        if (data.invite_code && inviteTrialDays !== null) {
+          const invite = await this.inviteCodeRepo.findValid(data.invite_code);
+          if (invite) await this.inviteCodeRepo.markAsUsed(invite.id, dbUser.id);
+        }
 
         return dbUser;
       },
@@ -118,6 +141,12 @@ export class RegisterUser {
       entity: "user",
       entityId: createdUser.id,
       ipAddress: input.ipAddress,
+    });
+
+    this.postHogService.track(createdUser.id, "user_registered", {
+      country: createdUser.country,
+      university: createdUser.university,
+      method: data.invite_code ? "invite" : "organic",
     });
 
     return {

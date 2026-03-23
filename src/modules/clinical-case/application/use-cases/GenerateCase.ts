@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common'
 import { IClinicalCaseRepository } from '../../domain/interfaces/clinical-case-repository.interface'
 import { ISpecialtyRepository } from '../../domain/interfaces/specialty-repository.interface'
 import { ISubscriptionRepository } from '../../../subscription/domain/interfaces/subscription-repository.interface'
+import { IReviewQueueRepository } from '../../../curation/domain/interfaces/review-queue-repository.interface'
+import { ReviewQueueItem } from '../../../curation/domain/entities/review-queue-item.entity'
 import { ClinicalCase, CaseDifficulty, CaseLanguage, CountryContext } from '../../domain/entities/clinical-case.entity'
 import { CaseGeneratorService } from '../../infrastructure/services/case-generator.service'
 import { DomainException } from '../../../../errors/domain-exception'
@@ -41,6 +43,8 @@ export class GenerateCase {
     private readonly specialtyRepo: ISpecialtyRepository,
     @Inject('ISubscriptionRepository')
     private readonly subscriptionRepo: ISubscriptionRepository,
+    @Inject('IReviewQueueRepository')
+    private readonly queueRepo: IReviewQueueRepository,
     private readonly caseGeneratorService: CaseGeneratorService,
   ) {}
 
@@ -78,7 +82,8 @@ export class GenerateCase {
         language: input.language,
         countryContext: input.countryContext,
       })
-    } catch {
+    } catch (err) {
+      console.error('[GenerateCase] generation error:', err)
       if (subscription) {
         subscription.generationsUsed -= 1
         await this.subscriptionRepo.update(subscription)
@@ -104,6 +109,9 @@ export class GenerateCase {
     })
 
     const saved = await this.caseRepo.create(clinicalCase)
+
+    const queueItem = ReviewQueueItem.create({ caseId: saved.id, status: 'pending' })
+    await this.queueRepo.create(queueItem)
 
     return {
       case: {

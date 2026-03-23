@@ -45,6 +45,14 @@ export class PrismaSessionRepository implements ISessionRepository {
     return this.mapSession(record)
   }
 
+  async findInProgressByUserAndCase(userId: string, caseId: string): Promise<ClinicalSession | null> {
+    const record = await this.prisma.session.findFirst({
+      where: { userId, caseId, status: 'in_progress' },
+    })
+    if (!record) return null
+    return this.mapSession(record)
+  }
+
   async findByUser(userId: string, filters: SessionListFilters): Promise<SessionListResult> {
     const where: Prisma.SessionWhereInput = { userId }
 
@@ -181,34 +189,23 @@ export class PrismaSessionRepository implements ISessionRepository {
         },
       })
     } else {
-      const n = existing.totalSessions
-      const newN = n + 1
-
-      const newAvg = (old: number, newVal: number): number => (old * n + newVal) / newN
+      const isImprovement = feedback.scoreTotal > Number(existing.avgScoreTotal)
 
       await this.prisma.studentPerformance.update({
         where: { unique_perf: { userId, specialtyId } },
         data: {
-          totalSessions: newN,
-          avgScoreTotal: newAvg(Number(existing.avgScoreTotal), feedback.scoreTotal),
-          avgHistoryTaking: newAvg(
-            Number(existing.avgHistoryTaking),
-            feedback.dimensions.history_taking.score,
-          ),
-          avgDifferential: newAvg(
-            Number(existing.avgDifferential),
-            feedback.dimensions.differential.score,
-          ),
-          avgDiagnosis: newAvg(
-            Number(existing.avgDiagnosis),
-            feedback.dimensions.diagnosis.score,
-          ),
-          avgExams: newAvg(Number(existing.avgExams), feedback.dimensions.exams.score),
-          avgManagement: newAvg(
-            Number(existing.avgManagement),
-            feedback.dimensions.management.score,
-          ),
+          totalSessions: { increment: 1 },
           lastSessionAt: new Date(),
+          ...(isImprovement
+            ? {
+                avgScoreTotal: feedback.scoreTotal,
+                avgHistoryTaking: feedback.dimensions.history_taking.score,
+                avgDifferential: feedback.dimensions.differential.score,
+                avgDiagnosis: feedback.dimensions.diagnosis.score,
+                avgExams: feedback.dimensions.exams.score,
+                avgManagement: feedback.dimensions.management.score,
+              }
+            : {}),
         },
       })
     }

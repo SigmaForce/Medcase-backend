@@ -7,7 +7,9 @@ import { CompleteOnboarding } from '../../application/use-cases/CompleteOnboardi
 import { GetPerformance } from '../../application/use-cases/GetPerformance'
 import { GetPerformanceBySpecialty } from '../../application/use-cases/GetPerformanceBySpecialty'
 import { GetStats } from '../../application/use-cases/GetStats'
+import { UpdateProfile } from '../../application/use-cases/UpdateProfile'
 import { completeOnboardingSchema } from '../../application/dtos/complete-onboarding.dto'
+import { updateProfileSchema } from '../../application/dtos/update-profile.dto'
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -19,6 +21,7 @@ export class UsersController {
     private readonly getPerformance: GetPerformance,
     private readonly getPerformanceBySpecialty: GetPerformanceBySpecialty,
     private readonly getStats: GetStats,
+    private readonly updateProfile: UpdateProfile,
   ) {}
 
   @Get('me')
@@ -66,6 +69,18 @@ export class UsersController {
   @ApiOperation({ summary: 'Estatísticas e conquistas', description: 'Retorna streak, badges e totais do aluno.' })
   async stats(@CurrentUser() user: JwtPayload) {
     return this.getStats.execute({ userId: user.sub })
+  }
+
+  @Patch('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Atualizar perfil', description: 'Atualiza dados do perfil do usuário autenticado.' })
+  @ApiResponse({ status: 200, description: 'Perfil atualizado.' })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  async update(
+    @CurrentUser() user: JwtPayload,
+    @Body(new ZodValidationPipe(updateProfileSchema)) body: unknown,
+  ) {
+    return this.updateProfile.execute({ userId: user.sub, body })
   }
 
   @Patch('me/onboarding')

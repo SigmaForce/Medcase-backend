@@ -4,7 +4,7 @@ import { apiReference } from '@scalar/nestjs-api-reference'
 import { AppModule } from './app.module'
 
 const bootstrap = async () => {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create(AppModule, { rawBody: true })
   app.enableCors()
 
   const config = new DocumentBuilder()

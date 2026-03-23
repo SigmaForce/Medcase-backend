@@ -90,7 +90,14 @@ export class ChatOrchestratorService {
       return this.sessionRepo.addMessage(assistantMessage)
     }
 
-    let examContext = ''
+    const userMessage = MessageTurn.create({
+      sessionId: session.id,
+      role: 'user',
+      content: userContent,
+      meta: { type: 'message' },
+    })
+    await this.sessionRepo.addMessage(userMessage)
+
     const detectionResult = this.examDetector.detect(userContent)
 
     if (detectionResult.isExamRequest) {
@@ -106,11 +113,21 @@ export class ChatOrchestratorService {
 
       if (extracted.slugs.length > 0) {
         const matchResult = this.examMatch.match(extracted.slugs, availableExams)
-        examContext = this.examMatch.buildExamContext(matchResult.matched)
 
         const merged = [...new Set([...session.requestedExams, ...extracted.slugs])]
         await this.sessionRepo.updateRequestedExams(session.id, merged)
         session.requestedExams = merged
+
+        if (matchResult.matched.length > 0) {
+          const report = this.examMatch.buildExamReport(matchResult.matched)
+          const examReportMessage = MessageTurn.create({
+            sessionId: session.id,
+            role: 'assistant',
+            content: report,
+            meta: { type: 'exam_report', exam_slugs: matchResult.matched.map((e) => e.slug) },
+          })
+          return this.sessionRepo.addMessage(examReportMessage)
+        }
       }
     }
 
@@ -131,16 +148,8 @@ export class ChatOrchestratorService {
     const messagesForApi: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...windowedHistory,
-      { role: 'user', content: userContent + examContext },
+      { role: 'user', content: userContent },
     ]
-
-    const userMessage = MessageTurn.create({
-      sessionId: session.id,
-      role: 'user',
-      content: userContent,
-      meta: { type: 'message' },
-    })
-    await this.sessionRepo.addMessage(userMessage)
 
     const completion = await this.openAi.complete({
       model: 'gpt-4o',

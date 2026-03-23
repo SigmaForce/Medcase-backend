@@ -10,12 +10,14 @@ const makeItem = (overrides = {}) => ({
 })
 const makeCase = (overrides = {}) => ({ id: 'case-1', status: 'pending_review', avgRating: 2.5, totalRatings: 5, ...overrides })
 
+const mockEventEmitter = { emit: jest.fn() }
+
 describe('RejectQueueItem', () => {
   let useCase: RejectQueueItem
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useCase = new RejectQueueItem(mockQueueRepo as never, mockCaseRepo as never)
+    useCase = new RejectQueueItem(mockQueueRepo as never, mockCaseRepo as never, mockEventEmitter as never)
   })
 
   it('throws FORBIDDEN when role is student', async () => {
@@ -43,5 +45,6 @@ describe('RejectQueueItem', () => {
 
     expect(result.queueItem.status).toBe('rejected')
     expect(result.case.status).toBe('rejected')
+    expect(mockEventEmitter.emit).toHaveBeenCalledWith('case.rejected', expect.objectContaining({ caseId: 'case-1' }))
   })
 })

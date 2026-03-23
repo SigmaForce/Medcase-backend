@@ -65,6 +65,7 @@ const mockRepo = {
   getSubscription: jest.fn(),
   findCaseById: jest.fn(),
   findByUserAndCase: jest.fn(),
+  findInProgressByUserAndCase: jest.fn(),
   incrementCasesUsed: jest.fn(),
   create: jest.fn(),
   addMessage: jest.fn(),
@@ -77,18 +78,21 @@ const mockRepo = {
   upsertPerformance: jest.fn(),
 }
 
+const mockEventEmitter = { emit: jest.fn() }
+const mockPostHogService = { track: jest.fn() }
+
 describe('StartSession', () => {
   let useCase: StartSession
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useCase = new StartSession(mockRepo as never)
+    useCase = new StartSession(mockRepo as never, mockEventEmitter as never, mockPostHogService as never)
   })
 
   it('creates session successfully', async () => {
     mockRepo.getSubscription.mockResolvedValue(mockSubscription)
     mockRepo.findCaseById.mockResolvedValue(mockCase)
-    mockRepo.findByUserAndCase.mockResolvedValue(null)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
     mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
     mockRepo.create.mockResolvedValue(mockSession)
     mockRepo.addMessage.mockResolvedValue(mockMessage)
@@ -102,13 +106,14 @@ describe('StartSession', () => {
     expect(mockRepo.incrementCasesUsed).toHaveBeenCalledWith(USER_ID)
   })
 
-  it('throws USAGE_LIMIT_REACHED when at limit', async () => {
+  it('throws USAGE_LIMIT_REACHED when at limit and emits event', async () => {
     mockRepo.getSubscription.mockResolvedValue({ ...mockSubscription, casesUsed: 5 })
 
     await expect(useCase.execute({ userId: USER_ID, caseId: CASE_ID })).rejects.toMatchObject({
       code: 'USAGE_LIMIT_REACHED',
       statusCode: 403,
     })
+    expect(mockEventEmitter.emit).toHaveBeenCalledWith('usage_limit.reached', { userId: USER_ID })
   })
 
   it('throws SUBSCRIPTION_NOT_FOUND when no subscription', async () => {
@@ -123,7 +128,7 @@ describe('StartSession', () => {
   it('throws TIMED_MODE_REQUIRES_PRO for free user requesting timed session', async () => {
     mockRepo.getSubscription.mockResolvedValue({ ...mockSubscription, plan: 'free' })
     mockRepo.findCaseById.mockResolvedValue(mockCase)
-    mockRepo.findByUserAndCase.mockResolvedValue(null)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
 
     await expect(
       useCase.execute({ userId: USER_ID, caseId: CASE_ID, isTimed: true }),
@@ -133,7 +138,7 @@ describe('StartSession', () => {
   it('allows timed mode for pro user', async () => {
     mockRepo.getSubscription.mockResolvedValue({ ...mockSubscription, plan: 'pro' })
     mockRepo.findCaseById.mockResolvedValue(mockCase)
-    mockRepo.findByUserAndCase.mockResolvedValue(null)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
     mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
     mockRepo.create.mockResolvedValue({ ...mockSession, isTimed: true })
     mockRepo.addMessage.mockResolvedValue(mockMessage)
@@ -161,15 +166,28 @@ describe('StartSession', () => {
     })
   })
 
-  it('throws CASE_ALREADY_STARTED when active session exists', async () => {
+  it('throws CASE_ALREADY_IN_PROGRESS when session is in progress', async () => {
     mockRepo.getSubscription.mockResolvedValue(mockSubscription)
     mockRepo.findCaseById.mockResolvedValue(mockCase)
-    mockRepo.findByUserAndCase.mockResolvedValue(mockSession)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(mockSession)
 
     await expect(useCase.execute({ userId: USER_ID, caseId: CASE_ID })).rejects.toMatchObject({
-      code: 'CASE_ALREADY_STARTED',
+      code: 'CASE_ALREADY_IN_PROGRESS',
       statusCode: 403,
     })
+  })
+
+  it('allows starting a new session when previous session is completed', async () => {
+    mockRepo.getSubscription.mockResolvedValue(mockSubscription)
+    mockRepo.findCaseById.mockResolvedValue(mockCase)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
+    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.create.mockResolvedValue(mockSession)
+    mockRepo.addMessage.mockResolvedValue(mockMessage)
+
+    const result = await useCase.execute({ userId: USER_ID, caseId: CASE_ID })
+    expect(result.session.id).toBe(SESSION_ID)
+    expect(mockRepo.incrementCasesUsed).toHaveBeenCalledWith(USER_ID)
   })
 
   it('throws for invalid case_id UUID', async () => {

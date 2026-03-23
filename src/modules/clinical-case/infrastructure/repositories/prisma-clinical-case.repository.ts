@@ -35,7 +35,7 @@ export class PrismaClinicalCaseRepository implements IClinicalCaseRepository {
   async findAll(filters: ListCasesFilters): Promise<ListCasesResult> {
     const where: Prisma.ClinicalCaseWhereInput = {
       status: 'approved',
-      avgRating: { gte: new Prisma.Decimal(2.0) },
+      OR: [{ totalRatings: 0 }, { avgRating: { gte: new Prisma.Decimal(2.0) } }],
     }
 
     if (filters.specialtyId !== undefined) {

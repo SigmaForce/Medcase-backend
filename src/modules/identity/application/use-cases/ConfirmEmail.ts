@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { createHash } from 'crypto'
 import dayjs from 'dayjs'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { IEmailVerificationRepository } from '../../domain/interfaces/email-verification-repository.interface'
 import { IUserRepository } from '../../domain/interfaces/user-repository.interface'
 import { IAuditLogRepository } from '../../domain/interfaces/audit-log-repository.interface'
@@ -13,6 +14,7 @@ export class ConfirmEmail {
     private readonly emailVerificationRepo: IEmailVerificationRepository,
     @Inject('IUserRepository') private readonly userRepo: IUserRepository,
     @Inject('IAuditLogRepository') private readonly auditLogRepo: IAuditLogRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(rawToken: string): Promise<void> {
@@ -41,5 +43,7 @@ export class ConfirmEmail {
       entity: 'user',
       entityId: user.id,
     })
+
+    this.eventEmitter.emit('user.email_confirmed', { userId: user.id })
   }
 }

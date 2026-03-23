@@ -20,13 +20,19 @@
     "prisma:studio": "prisma studio",
     "prisma:generate": "prisma generate",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
+    "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/schedule": "^6.1.1",
     "@nestjs/swagger": "^8.1.1",
     "@nestjs/throttler": "^6.5.0",
     "@prisma/adapter-pg": "^7.4.2",
@@ -34,8 +40,11 @@
     "@scalar/nestjs-api-reference": "^1.1.2",
     "bcrypt": "^6.0.0",
     "dayjs": "^1.11.19",
+    "eventemitter2": "^6.4.9",
+    "mercadopago": "^2.12.0",
     "openai": "^6.27.0",
     "pg": "^8.20.0",
+    "posthog-node": "^5.28.1",
     "reflect-metadata": "^0.2.0",
     "resend": "^6.9.3",
     "rxjs": "^7.8.1",

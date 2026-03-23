@@ -6,8 +6,23 @@ export interface ListQueueFilters {
   limit: number
 }
 
+export interface QueueCaseSnapshot {
+  id: string
+  title: string
+  status: string
+  difficulty: string
+  language: string
+  countryContext: string
+  specialty: { id: number; namePt: string; nameEs: string }
+  createdAt: Date
+}
+
+export interface QueueItemWithCase extends ReviewQueueItem {
+  case: QueueCaseSnapshot
+}
+
 export interface ListQueueResult {
-  data: ReviewQueueItem[]
+  data: QueueItemWithCase[]
   meta: { page: number; limit: number; total: number }
 }
 

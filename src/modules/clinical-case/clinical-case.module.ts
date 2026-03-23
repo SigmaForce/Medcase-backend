@@ -4,6 +4,7 @@ import { SubscriptionModule } from '../subscription/subscription.module'
 // Repositories
 import { PrismaClinicalCaseRepository } from './infrastructure/repositories/prisma-clinical-case.repository'
 import { PrismaSpecialtyRepository } from './infrastructure/repositories/prisma-specialty.repository'
+import { PrismaReviewQueueRepository } from '../curation/infrastructure/repositories/prisma-review-queue.repository'
 
 // Adapters & Services
 import { OpenAiAdapter } from './infrastructure/adapters/openai.adapter'
@@ -25,6 +26,7 @@ import { SpecialtyController } from './presentation/controllers/specialty.contro
   providers: [
     { provide: 'IClinicalCaseRepository', useClass: PrismaClinicalCaseRepository },
     { provide: 'ISpecialtyRepository', useClass: PrismaSpecialtyRepository },
+    { provide: 'IReviewQueueRepository', useClass: PrismaReviewQueueRepository },
     OpenAiAdapter,
     CaseGeneratorService,
     ListCases,

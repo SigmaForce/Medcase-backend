@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { IReviewQueueRepository } from '../../domain/interfaces/review-queue-repository.interface'
 import { IClinicalCaseRepository } from '../../../clinical-case/domain/interfaces/clinical-case-repository.interface'
 import { DomainException } from '../../../../errors/domain-exception'
@@ -14,6 +15,7 @@ export class RejectQueueItem {
   constructor(
     @Inject('IReviewQueueRepository') private readonly queueRepo: IReviewQueueRepository,
     @Inject('IClinicalCaseRepository') private readonly caseRepo: IClinicalCaseRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute({ itemId, userId, role }: RejectQueueItemInput) {
@@ -42,6 +44,13 @@ export class RejectQueueItem {
 
     clinicalCase.status = 'rejected'
     await this.caseRepo.update(clinicalCase)
+
+    this.eventEmitter.emit('case.rejected', {
+      userId: clinicalCase.createdById,
+      caseId: clinicalCase.id,
+      caseTitle: clinicalCase.title,
+      rejectionReason: 'Caso rejeitado pela curadoria',
+    })
 
     return {
       queueItem: { id: item.id, status: item.status, reviewedAt: item.reviewedAt },

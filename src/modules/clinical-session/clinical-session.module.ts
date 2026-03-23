@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { IdentityModule } from '../identity/identity.module'
+import { AnalyticsModule } from '../analytics/analytics.module'
 
 // Repository
 import { PrismaSessionRepository } from './infrastructure/repositories/prisma-session.repository'
@@ -30,7 +31,7 @@ import { MessageController } from './presentation/controllers/message.controller
 import { CompleteController } from './presentation/controllers/complete.controller'
 
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, AnalyticsModule],
   providers: [
     { provide: 'ISessionRepository', useClass: PrismaSessionRepository },
     OpenAiAdapter,

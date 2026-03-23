@@ -1,5 +1,4 @@
 import { RegisterUser } from './RegisterUser'
-import { DomainException } from '../../../../errors/domain-exception'
 
 jest.mock('src/config/env', () => ({
   env: { NODE_ENV: 'test', JWT_SECRET: 'test-secret' },
@@ -23,9 +22,11 @@ const mockTx = {
 
 const mockUserRepo = { findByEmail: jest.fn() }
 const mockSubscriptionRepo = {}
+const mockInviteCodeRepo = { findValid: jest.fn(), markAsUsed: jest.fn() }
 const mockEmailVerificationRepo = { create: jest.fn() }
 const mockEmailService = { sendEmailConfirmation: jest.fn() }
 const mockAuditLogRepo = { log: jest.fn() }
+const mockPostHogService = { track: jest.fn() }
 const mockPrisma = {
   $transaction: jest.fn().mockImplementation((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
 }
@@ -46,10 +47,12 @@ describe('RegisterUser', () => {
     useCase = new RegisterUser(
       mockUserRepo as any,
       mockSubscriptionRepo as any,
+      mockInviteCodeRepo as any,
       mockEmailVerificationRepo as any,
       mockEmailService as any,
       mockAuditLogRepo as any,
       mockPrisma as any,
+      mockPostHogService as any,
     )
   })
 
@@ -70,6 +73,7 @@ describe('RegisterUser', () => {
     expect(mockAuditLogRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.registered' }),
     )
+    expect(mockPostHogService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ country: 'BR' }))
   })
 
   it('throws EMAIL_ALREADY_EXISTS when email is taken', async () => {
@@ -90,5 +94,28 @@ describe('RegisterUser', () => {
     await expect(
       useCase.execute({ ...validInput, country: 'XX' }),
     ).rejects.toThrow()
+  })
+
+  it('creates trial subscription when valid invite code is provided', async () => {
+    mockUserRepo.findByEmail.mockResolvedValue(null)
+    mockInviteCodeRepo.findValid.mockResolvedValue({ id: 'invite-1', trialDays: 30 })
+    mockInviteCodeRepo.markAsUsed.mockResolvedValue(undefined)
+    mockEmailVerificationRepo.create.mockResolvedValue(undefined)
+    mockEmailService.sendEmailConfirmation.mockResolvedValue(undefined)
+    mockAuditLogRepo.log.mockResolvedValue(undefined)
+
+    const result = await useCase.execute({ ...validInput, invite_code: 'BETA-ABC123' })
+
+    expect(result.user.email).toBe('alice@example.com')
+    expect(mockPostHogService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ method: 'invite' }))
+  })
+
+  it('throws INVALID_OR_EXPIRED_INVITE for invalid invite code', async () => {
+    mockUserRepo.findByEmail.mockResolvedValue(null)
+    mockInviteCodeRepo.findValid.mockResolvedValue(null)
+
+    await expect(
+      useCase.execute({ ...validInput, invite_code: 'BETA-INVALID' }),
+    ).rejects.toMatchObject({ code: 'INVALID_OR_EXPIRED_INVITE' })
   })
 })

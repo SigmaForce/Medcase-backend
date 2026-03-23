@@ -4,6 +4,7 @@ import {
   IReviewQueueRepository,
   ListQueueFilters,
   ListQueueResult,
+  QueueItemWithCase,
 } from '../../domain/interfaces/review-queue-repository.interface'
 import { ReviewQueueItem, ReviewQueueStatus } from '../../domain/entities/review-queue-item.entity'
 import { Prisma } from '@prisma/client'
@@ -47,14 +48,36 @@ export class PrismaReviewQueueRepository implements IReviewQueueRepository {
     const take = filters.limit
 
     const [records, total] = await Promise.all([
-      this.prisma.caseReviewQueue.findMany({ where, skip, take, orderBy: { createdAt: 'desc' } }),
+      this.prisma.caseReviewQueue.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: { case: { include: { specialty: true } } },
+      }),
       this.prisma.caseReviewQueue.count({ where }),
     ])
 
-    return {
-      data: records.map((r) => this.toDomain(r)),
-      meta: { page: filters.page, limit: filters.limit, total },
-    }
+    const data: QueueItemWithCase[] = records.map((r) => {
+      const item = this.toDomain(r) as QueueItemWithCase
+      item.case = {
+        id: r.case.id,
+        title: r.case.title,
+        status: r.case.status,
+        difficulty: r.case.difficulty,
+        language: r.case.language,
+        countryContext: r.case.countryContext,
+        specialty: {
+          id: r.case.specialty.id,
+          namePt: r.case.specialty.namePt,
+          nameEs: r.case.specialty.nameEs,
+        },
+        createdAt: r.case.createdAt,
+      }
+      return item
+    })
+
+    return { data, meta: { page: filters.page, limit: filters.limit, total } }
   }
 
   async update(item: ReviewQueueItem): Promise<ReviewQueueItem> {

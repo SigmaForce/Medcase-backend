@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { ISessionRepository } from '../../domain/interfaces/session-repository.interface'
 import { ClinicalSession } from '../../domain/entities/clinical-session.entity'
 import { MessageTurn } from '../../domain/entities/message-turn.entity'
 import { DomainException } from '../../../../errors/domain-exception'
 import { startSessionSchema } from '../dtos/start-session.dto'
+import { PostHogService } from '../../../analytics/infrastructure/services/posthog.service'
 
 export interface StartSessionInput {
   userId: string
@@ -36,6 +38,8 @@ export interface StartSessionOutput {
 export class StartSession {
   constructor(
     @Inject('ISessionRepository') private readonly sessionRepo: ISessionRepository,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly postHogService: PostHogService,
   ) {}
 
   async execute(input: StartSessionInput): Promise<StartSessionOutput> {
@@ -50,6 +54,7 @@ export class StartSession {
     }
 
     if (subscription.casesUsed >= subscription.casesLimit) {
+      this.eventEmitter.emit('usage_limit.reached', { userId: input.userId })
       throw new DomainException('USAGE_LIMIT_REACHED', 403, JSON.stringify({ reset_at: subscription.usageResetAt }))
     }
 
@@ -62,12 +67,9 @@ export class StartSession {
       throw new DomainException('CASE_NOT_FOUND', 404)
     }
 
-    const existingSession = await this.sessionRepo.findByUserAndCase(input.userId, data.case_id)
-    if (
-      existingSession &&
-      (existingSession.status === 'in_progress' || existingSession.status === 'completed')
-    ) {
-      throw new DomainException('CASE_ALREADY_STARTED', 403)
+    const inProgressSession = await this.sessionRepo.findInProgressByUserAndCase(input.userId, data.case_id)
+    if (inProgressSession) {
+      throw new DomainException('CASE_ALREADY_IN_PROGRESS', 403)
     }
 
     await this.sessionRepo.incrementCasesUsed(input.userId)
@@ -94,6 +96,11 @@ export class StartSession {
     const savedMessage = await this.sessionRepo.addMessage(firstMessage)
 
     const casesRemaining = Math.max(0, subscription.casesLimit - (subscription.casesUsed + 1))
+
+    this.postHogService.track(input.userId, 'session_started', {
+      plan: subscription.plan,
+      is_timed: data.is_timed,
+    })
 
     return {
       session: {

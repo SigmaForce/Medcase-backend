@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
+import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -20,20 +21,24 @@ import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.p
 import { listCasesSchema, ListCasesDto } from '../../application/dtos/list-cases.dto'
 import { ClinicalCase } from '../../domain/entities/clinical-case.entity'
 
-const safeCaseResponse = (c: ClinicalCase) => ({
-  id: c.id,
-  specialtyId: c.specialtyId,
-  createdById: c.createdById,
-  title: c.title,
-  difficulty: c.difficulty,
-  language: c.language,
-  countryContext: c.countryContext,
-  status: c.status,
-  avgRating: c.avgRating,
-  totalRatings: c.totalRatings,
-  createdAt: c.createdAt,
-  updatedAt: c.updatedAt,
-})
+const safeCaseResponse = (c: ClinicalCase, role?: string) => {
+  const isPrivileged = role === 'reviewer' || role === 'admin'
+  return {
+    id: c.id,
+    specialtyId: c.specialtyId,
+    createdById: c.createdById,
+    title: c.title,
+    difficulty: c.difficulty,
+    language: c.language,
+    countryContext: c.countryContext,
+    status: c.status,
+    avgRating: c.avgRating,
+    totalRatings: c.totalRatings,
+    createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
+    ...(isPrivileged && { caseBrief: c.caseBrief, availableExams: c.availableExams }),
+  }
+}
 
 @ApiTags('Cases')
 @ApiBearerAuth()
@@ -71,7 +76,7 @@ export class CaseController {
     })
 
     return {
-      data: result.data.map(safeCaseResponse),
+      data: result.data.map((c) => safeCaseResponse(c)),
       meta: result.meta,
     }
   }
@@ -87,8 +92,8 @@ export class CaseController {
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
   @ApiResponse({ status: 403, description: 'Caso não disponível.' })
   @ApiResponse({ status: 404, description: 'Caso não encontrado.' })
-  async detail(@Param('id') id: string) {
-    const clinicalCase = await this.getCase.execute({ id })
-    return safeCaseResponse(clinicalCase)
+  async detail(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const clinicalCase = await this.getCase.execute({ id, role: user.role })
+    return safeCaseResponse(clinicalCase, user.role)
   }
 }

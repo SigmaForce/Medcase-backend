@@ -5,6 +5,7 @@ import { DomainException } from '../../../../errors/domain-exception'
 
 export interface GetCaseInput {
   id: string
+  role?: string
 }
 
 export type GetCaseOutput = ClinicalCase
@@ -23,7 +24,8 @@ export class GetCase {
       throw new DomainException('CASE_NOT_FOUND', 404)
     }
 
-    if (clinicalCase.status !== 'approved') {
+    const isPrivileged = input.role === 'reviewer' || input.role === 'admin'
+    if (!isPrivileged && clinicalCase.status !== 'approved') {
       throw new DomainException('CASE_NOT_AVAILABLE', 403)
     }
 

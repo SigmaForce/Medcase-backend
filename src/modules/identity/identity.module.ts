@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
 import { env } from '../../config/env'
 import { SubscriptionModule } from '../subscription/subscription.module'
+import { AnalyticsModule } from '../analytics/analytics.module'
 
 // Repositories
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository'
@@ -34,6 +35,7 @@ import { PrismaStudentPerformanceRepository } from './infrastructure/repositorie
 import { GetPerformance } from './application/use-cases/GetPerformance'
 import { GetPerformanceBySpecialty } from './application/use-cases/GetPerformanceBySpecialty'
 import { GetStats } from './application/use-cases/GetStats'
+import { UpdateProfile } from './application/use-cases/UpdateProfile'
 
 // Controllers
 import { AuthController } from './presentation/controllers/auth.controller'
@@ -42,6 +44,7 @@ import { UsersController } from './presentation/controllers/users.controller'
 @Module({
   imports: [
     SubscriptionModule,
+    AnalyticsModule,
     JwtModule.register({
       secret: env.JWT_SECRET,
       signOptions: { expiresIn: 3600 },
@@ -70,6 +73,7 @@ import { UsersController } from './presentation/controllers/users.controller'
     GetPerformance,
     GetPerformanceBySpecialty,
     GetStats,
+    UpdateProfile,
   ],
   controllers: [AuthController, UsersController],
   exports: ['IUserStreakRepository', 'IUserBadgeRepository', 'IStudentPerformanceRepository'],
