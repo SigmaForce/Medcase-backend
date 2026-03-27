@@ -7,10 +7,11 @@ import { CostsController } from './presentation/controllers/costs.controller'
 @Module({
   providers: [
     { provide: 'IUsageMetricsRepository', useClass: PrismaUsageMetricsRepository },
+    { provide: 'IAnalyticsService', useClass: PostHogService },
     PostHogService,
     GetAdminCosts,
   ],
   controllers: [CostsController],
-  exports: ['IUsageMetricsRepository', PostHogService],
+  exports: ['IUsageMetricsRepository', 'IAnalyticsService', PostHogService],
 })
 export class AnalyticsModule {}

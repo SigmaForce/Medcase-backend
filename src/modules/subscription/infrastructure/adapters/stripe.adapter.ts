@@ -54,4 +54,13 @@ export class StripeAdapter {
     })
     return { url: session.url }
   }
+
+  async retrieveCustomerIdFromSubscription(externalSubId: string): Promise<string> {
+    const sub = await this.stripe.subscriptions.retrieve(externalSubId)
+    return sub.customer as string
+  }
+
+  async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    return this.stripe.subscriptions.retrieve(subscriptionId)
+  }
 }

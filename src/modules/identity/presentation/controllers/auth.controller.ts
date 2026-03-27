@@ -1,11 +1,9 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common'
@@ -15,14 +13,16 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger'
 import { Public } from '../../../../infra/http/decorators/public.decorator'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import { EmailThrottlerGuard } from '../../../../infra/http/guards/email-throttler.guard'
+import { z } from 'zod'
 import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.pipe'
+
+const confirmEmailSchema = z.object({ token: z.string().min(1) })
 import { RegisterUser } from '../../application/use-cases/RegisterUser'
 import { LoginUser } from '../../application/use-cases/LoginUser'
 import { RefreshTokens } from '../../application/use-cases/RefreshTokens'
@@ -120,13 +120,24 @@ export class AuthController {
   }
 
   @Public()
-  @Get('confirm-email')
+  @Post('confirm-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirmar e-mail', description: 'Confirma o e-mail do usuário via token enviado por e-mail.' })
-  @ApiQuery({ name: 'token', required: true, description: 'Token de confirmação recebido por e-mail.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['token'],
+      properties: {
+        token: { type: 'string', example: 'abc123...' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'E-mail confirmado com sucesso.' })
   @ApiResponse({ status: 400, description: 'Token inválido ou expirado.' })
-  async confirmEmailHandler(@Query('token') token: string) {
+  async confirmEmailHandler(
+    @Body(new ZodValidationPipe(confirmEmailSchema)) body: unknown,
+  ) {
+    const { token } = body as { token: string }
     await this.confirmEmail.execute(token)
     return { message: 'E-mail confirmado com sucesso.' }
   }

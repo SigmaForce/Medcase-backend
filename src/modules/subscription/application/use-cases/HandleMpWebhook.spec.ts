@@ -38,16 +38,17 @@ const makePaymentBody = (dataId: string) => ({
   data: { id: dataId },
 })
 
-const makeHeaders = () => ({
-  'x-signature': '',
-  'x-request-id': '',
+// Headers válidos com ts e hash presentes; verifyWebhookSignature é mockado sem throw
+const validHeaders = () => ({
+  'x-signature': 'ts=1711234567,v1=abc123hash',
+  'x-request-id': 'req-valid-001',
 })
 
 describe('HandleMpWebhook', () => {
   let useCase: HandleMpWebhook
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    jest.resetAllMocks()
     useCase = new HandleMpWebhook(
       mockSubscriptionRepo as never,
       mockPaymentEventRepo as never,
@@ -68,7 +69,7 @@ describe('HandleMpWebhook', () => {
 
       await useCase.execute({
         body: makePaymentBody('pay_123'),
-        headers: makeHeaders(),
+        headers: validHeaders(),
       })
 
       expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledWith('user-1', {
@@ -96,7 +97,7 @@ describe('HandleMpWebhook', () => {
 
       await useCase.execute({
         body: makePaymentBody('pay_rejected'),
-        headers: makeHeaders(),
+        headers: validHeaders(),
       })
 
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
@@ -116,7 +117,7 @@ describe('HandleMpWebhook', () => {
 
       await useCase.execute({
         body: makePaymentBody('pay_cancelled'),
-        headers: makeHeaders(),
+        headers: validHeaders(),
       })
 
       expect(mockEventEmitter.emit).toHaveBeenCalledWith(
@@ -142,6 +143,31 @@ describe('HandleMpWebhook', () => {
         }),
       ).rejects.toThrow('INVALID_WEBHOOK_SIGNATURE')
     })
+
+    it('should throw DomainException when ts is missing from x-signature', async () => {
+      await expect(
+        useCase.execute({
+          body: makePaymentBody('pay_999'),
+          headers: {
+            'x-signature': '',
+            'x-request-id': 'req-1',
+          },
+        }),
+      ).rejects.toThrow()
+
+      expect(mockMercadoPagoAdapter.verifyWebhookSignature).not.toHaveBeenCalled()
+    })
+
+    it('should throw DomainException when dataId is missing', async () => {
+      await expect(
+        useCase.execute({
+          body: { type: 'payment', data: { id: '' } },
+          headers: validHeaders(),
+        }),
+      ).rejects.toThrow()
+
+      expect(mockMercadoPagoAdapter.verifyWebhookSignature).not.toHaveBeenCalled()
+    })
   })
 
   describe('idempotency', () => {
@@ -150,12 +176,71 @@ describe('HandleMpWebhook', () => {
 
       await useCase.execute({
         body: makePaymentBody('pay_dup'),
-        headers: makeHeaders(),
+        headers: validHeaders(),
       })
 
       expect(mockMercadoPagoAdapter.getPaymentStatus).not.toHaveBeenCalled()
       expect(mockSubscriptionRepo.upgrade).not.toHaveBeenCalled()
       expect(mockEventEmitter.emit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('race condition', () => {
+    it('documents risk: concurrent webhooks with same id both process when DB check is not atomic', async () => {
+      // Ambas as chamadas simultâneas vêem null (DB check não é atômico sem lock)
+      // upgrade é chamado 2x — a unique constraint em PaymentEvent é a última defesa no DB real
+      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
+        externalReference: 'user-race',
+        status: 'approved',
+      })
+      mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
+      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+
+      await Promise.all([
+        useCase.execute({ body: makePaymentBody('pay_race'), headers: validHeaders() }),
+        useCase.execute({ body: makePaymentBody('pay_race'), headers: validHeaders() }),
+      ])
+
+      // Documenta o risco: sem transação atômica no application layer,
+      // upgrade pode ser chamado 2x. O DB (@@unique em PaymentEvent) é a barreira final.
+      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(2)
+    })
+
+    it('should process only once when first webhook saves event before second checks', async () => {
+      // Simula sequência: primeiro salva, segundo encontra evento existente
+      mockPaymentEventRepo.findByExternalId
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'evt-saved' })
+
+      mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
+        externalReference: 'user-seq',
+        status: 'approved',
+      })
+      mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
+      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+
+      await useCase.execute({ body: makePaymentBody('pay_seq'), headers: validHeaders() })
+      await useCase.execute({ body: makePaymentBody('pay_seq'), headers: validHeaders() })
+
+      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle subscription_preapproval idempotently in sequence', async () => {
+      const preapprovalBody = { type: 'subscription_preapproval', data: { id: 'pre_123' } }
+
+      mockPaymentEventRepo.findByExternalId
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'evt-pre' })
+
+      mockSubscriptionRepo.findByExternalId.mockResolvedValue({ userId: 'user-down', id: 'sub-1' })
+      mockSubscriptionRepo.downgrade.mockResolvedValue(undefined)
+      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+
+      await useCase.execute({ body: preapprovalBody, headers: validHeaders() })
+      await useCase.execute({ body: preapprovalBody, headers: validHeaders() })
+
+      expect(mockSubscriptionRepo.downgrade).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -41,6 +41,7 @@
     "bcrypt": "^6.0.0",
     "dayjs": "^1.11.19",
     "eventemitter2": "^6.4.9",
+    "helmet": "^8.1.0",
     "mercadopago": "^2.12.0",
     "openai": "^6.27.0",
     "pg": "^8.20.0",

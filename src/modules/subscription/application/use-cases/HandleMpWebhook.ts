@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { EventEmitter2 } from '@nestjs/event-emitter'
+import { DomainException } from '../../../../errors/domain-exception'
 import { ISubscriptionRepository } from '../../domain/interfaces/subscription-repository.interface'
 import { IPaymentEventRepository } from '../../domain/interfaces/payment-event-repository.interface'
 import { MercadoPagoAdapter } from '../../infrastructure/adapters/mercadopago.adapter'
@@ -34,9 +35,10 @@ export class HandleMpWebhook {
     const ts = this.extractTs(xSignature)
     const hash = this.extractHash(xSignature)
 
-    if (ts && hash && dataId) {
-      this.mercadoPagoAdapter.verifyWebhookSignature({ dataId, xRequestId, ts, hash })
+    if (!ts || !hash || !dataId) {
+      throw new DomainException('INVALID_WEBHOOK_SIGNATURE', 401)
     }
+    this.mercadoPagoAdapter.verifyWebhookSignature({ dataId, xRequestId, ts, hash })
 
     const topic = body.type ?? body.action ?? ''
     const eventId = `mp_${topic}_${dataId}`

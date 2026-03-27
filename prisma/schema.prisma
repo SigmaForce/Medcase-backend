@@ -131,6 +131,8 @@ model AuditLog {
 
   user User? @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([action, createdAt(sort: Desc)])
   @@map("audit_logs")
 }
 
@@ -236,6 +238,8 @@ model Session {
   case     ClinicalCase @relation(fields: [caseId], references: [id])
   messages Message[]
 
+  @@index([userId])
+  @@index([caseId])
   @@map("sessions")
 }
 
@@ -249,6 +253,7 @@ model Message {
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@index([sessionId, createdAt(sort: Desc)])
   @@map("messages")
 }
 

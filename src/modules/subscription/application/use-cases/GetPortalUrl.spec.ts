@@ -28,10 +28,11 @@ const makeSubscriptionRepo = (): jest.Mocked<ISubscriptionRepository> =>
     upgrade: jest.fn(),
     downgrade: jest.fn(),
     resetUsage: jest.fn(),
+    findDueForReset: jest.fn(),
   }) as jest.Mocked<ISubscriptionRepository>
 
 const makeStripeAdapter = (): jest.Mocked<StripeAdapter> =>
-  ({ createBillingPortalSession: jest.fn() }) as never
+  ({ createBillingPortalSession: jest.fn(), retrieveCustomerIdFromSubscription: jest.fn() }) as never
 
 const makeStripeSub = (overrides: Partial<Subscription> = {}): Subscription => {
   const sub = Subscription.createFree('user-1')
@@ -77,8 +78,29 @@ describe('GetPortalUrl', () => {
       })
     })
 
-    it('should throw NO_PORTAL_AVAILABLE when externalCustomer is missing', async () => {
-      subscriptionRepo.findByUserId.mockResolvedValue(makeStripeSub({ externalCustomer: null }))
+    it('should recover customer ID from Stripe when externalCustomer is missing but externalSubId exists', async () => {
+      const sub = makeStripeSub({ externalCustomer: null, externalSubId: 'sub_test' })
+      subscriptionRepo.findByUserId.mockResolvedValue(sub)
+      stripeAdapter.retrieveCustomerIdFromSubscription.mockResolvedValue('cus_recovered')
+      stripeAdapter.createBillingPortalSession.mockResolvedValue({
+        url: 'https://billing.stripe.com/session/test',
+      })
+
+      const result = await useCase.execute({ userId: 'user-1' })
+
+      expect(stripeAdapter.retrieveCustomerIdFromSubscription).toHaveBeenCalledWith('sub_test')
+      expect(subscriptionRepo.update).toHaveBeenCalled()
+      expect(stripeAdapter.createBillingPortalSession).toHaveBeenCalledWith(
+        'cus_recovered',
+        'https://app.revalidai.com/dashboard',
+      )
+      expect(result).toEqual({ portal_url: 'https://billing.stripe.com/session/test', provider: 'stripe' })
+    })
+
+    it('should throw NO_PORTAL_AVAILABLE when both externalCustomer and externalSubId are missing', async () => {
+      subscriptionRepo.findByUserId.mockResolvedValue(
+        makeStripeSub({ externalCustomer: null, externalSubId: null }),
+      )
 
       await expect(useCase.execute({ userId: 'user-1' })).rejects.toThrow(
         new DomainException('NO_PORTAL_AVAILABLE', 404),

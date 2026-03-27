@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Patch } from '@nestjs/common'
+import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch } from '@nestjs/common'
 import {
   ApiBearerAuth,
   ApiBody,
@@ -52,7 +52,7 @@ export class CompleteController {
   @ApiResponse({ status: 403, description: 'Sem permissão para finalizar esta sessão.' })
   @ApiResponse({ status: 404, description: 'Sessão não encontrada.' })
   async complete(
-    @Param('id') sessionId: string,
+    @Param('id', ParseUUIDPipe) sessionId: string,
     @Body(new ZodValidationPipe(completeSessionSchema)) body: unknown,
     @CurrentUser() user: JwtPayload,
   ) {
@@ -76,7 +76,7 @@ export class CompleteController {
   @ApiResponse({ status: 400, description: 'Sessão já finalizada.' })
   @ApiResponse({ status: 403, description: 'Sem permissão para abandonar esta sessão.' })
   @ApiResponse({ status: 404, description: 'Sessão não encontrada.' })
-  async abandon(@Param('id') sessionId: string, @CurrentUser() user: JwtPayload) {
+  async abandon(@Param('id', ParseUUIDPipe) sessionId: string, @CurrentUser() user: JwtPayload) {
     return this.abandonSession.execute({ sessionId, userId: user.sub })
   }
 }

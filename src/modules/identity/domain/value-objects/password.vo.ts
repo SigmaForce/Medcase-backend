@@ -4,6 +4,10 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/
 
 export class Password {
   static validate(raw: string, email: string): void {
+    if (raw.length > 72) {
+      throw new DomainException('PASSWORD_TOO_LONG', 400, 'Máximo 72 caracteres')
+    }
+
     if (!PASSWORD_REGEX.test(raw)) {
       throw new DomainException(
         'PASSWORD_TOO_WEAK',

@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { MercadoPagoConfig, PreApproval, Payment } from 'mercadopago'
 import * as crypto from 'crypto'
+import { timingSafeEqual } from 'crypto'
 import { env } from '../../../../config/env'
 
 export interface MpSubscriptionResult {
@@ -54,7 +55,9 @@ export class MercadoPagoAdapter {
       .update(manifest)
       .digest('hex')
 
-    if (computedHash !== hash) {
+    const computedBuf = Buffer.from(computedHash, 'hex')
+    const receivedBuf = Buffer.from(hash, 'hex')
+    if (computedBuf.length !== receivedBuf.length || !timingSafeEqual(computedBuf, receivedBuf)) {
       throw new UnauthorizedException('INVALID_MP_SIGNATURE')
     }
   }

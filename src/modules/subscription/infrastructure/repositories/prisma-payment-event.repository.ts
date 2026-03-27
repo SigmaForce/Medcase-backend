@@ -17,6 +17,13 @@ export class PrismaPaymentEventRepository implements IPaymentEventRepository {
     return record ? this.toDomain(record) : null
   }
 
+  async updateStatus(provider: string, externalId: string, status: string): Promise<void> {
+    await this.prisma.paymentEvent.update({
+      where: { unique_external_event: { provider, externalId } },
+      data: { status },
+    })
+  }
+
   async save(params: SavePaymentEventParams): Promise<PaymentEvent> {
     const record = await this.prisma.paymentEvent.create({
       data: {

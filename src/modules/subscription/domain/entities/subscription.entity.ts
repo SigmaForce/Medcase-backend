@@ -10,6 +10,7 @@ export interface UpgradeParams {
   externalSubId: string
   externalCustomer: string
   currentPeriodEnd?: Date | null
+  trialEndsAt?: Date | null
 }
 
 export class Subscription {
@@ -85,7 +86,7 @@ export class Subscription {
     this.currentPeriodEnd = params.currentPeriodEnd ?? null
     this.casesLimit = 999
     this.generationsLimit = 999
-    this.trialEndsAt = null
+    this.trialEndsAt = params.trialEndsAt ?? null
     this.cancelAtPeriodEnd = false
   }
 

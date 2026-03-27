@@ -7,8 +7,13 @@ export interface AtRiskUser {
   fullName: string
 }
 
+export interface FindAtRiskOptions {
+  take?: number
+  skip?: number
+}
+
 export interface IUserStreakRepository {
   findByUserId(userId: string): Promise<UserStreak | null>
   upsert(streak: UserStreak): Promise<UserStreak>
-  findAtRiskToday(): Promise<AtRiskUser[]>
+  findAtRiskToday(options?: FindAtRiskOptions): Promise<AtRiskUser[]>
 }

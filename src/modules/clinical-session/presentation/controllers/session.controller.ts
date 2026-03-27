@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseUUIDPipe,
   Post,
   Query,
 } from '@nestjs/common'
@@ -99,7 +100,7 @@ export class SessionController {
   @ApiResponse({ status: 200, description: 'Sessão encontrada.' })
   @ApiResponse({ status: 403, description: 'Sem permissão para acessar esta sessão.' })
   @ApiResponse({ status: 404, description: 'Sessão não encontrada.' })
-  async getOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+  async getOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     return this.getSession.execute({ sessionId: id, userId: user.sub })
   }
 }

@@ -81,7 +81,7 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
         currentPeriodEnd: params.currentPeriodEnd ?? null,
         casesLimit: 999,
         generationsLimit: 999,
-        trialEndsAt: null,
+        trialEndsAt: params.trialEndsAt ?? null,
         cancelAtPeriodEnd: false,
       },
     })

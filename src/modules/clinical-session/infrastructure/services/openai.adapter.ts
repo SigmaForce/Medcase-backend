@@ -29,15 +29,18 @@ export class OpenAiAdapter {
   }
 
   async complete(options: ChatCompletionOptions): Promise<ChatCompletionResult> {
-    const response = await this.client.chat.completions.create({
-      model: options.model ?? 'gpt-4o',
-      messages: options.messages,
-      max_tokens: options.maxTokens,
-      temperature: options.temperature ?? 0.7,
-      ...(options.responseFormat === 'json_object'
-        ? { response_format: { type: 'json_object' as const } }
-        : {}),
-    })
+    const response = await this.client.chat.completions.create(
+      {
+        model: options.model ?? 'gpt-4o',
+        messages: options.messages,
+        max_tokens: options.maxTokens ?? 2000,
+        temperature: options.temperature ?? 0.7,
+        ...(options.responseFormat === 'json_object'
+          ? { response_format: { type: 'json_object' as const } }
+          : {}),
+      },
+      { signal: AbortSignal.timeout(30_000) },
+    )
 
     const choice = response.choices[0]
     const content = choice?.message?.content ?? ''

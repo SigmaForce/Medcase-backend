@@ -1,12 +1,11 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { randomBytes, createHash } from "crypto";
 import * as bcrypt from "bcrypt";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../../../infra/database/prisma.service";
+import { ITransactionManager } from "../../domain/interfaces/transaction-manager.interface";
+import { IAnalyticsService } from "../../../analytics/domain/interfaces/analytics-service.interface";
 import { IUserRepository } from "../../domain/interfaces/user-repository.interface";
 import { ISubscriptionRepository } from "../../../subscription/domain/interfaces/subscription-repository.interface";
 import { IInviteCodeRepository } from "../../../subscription/domain/interfaces/invite-code-repository.interface";
-import { IEmailVerificationRepository } from "../../domain/interfaces/email-verification-repository.interface";
 import { IEmailService } from "../../domain/interfaces/email-service.interface";
 import { IAuditLogRepository } from "../../domain/interfaces/audit-log-repository.interface";
 import { User } from "../../domain/entities/user.entity";
@@ -16,7 +15,6 @@ import { Password } from "../../domain/value-objects/password.vo";
 import { DomainException } from "../../../../errors/domain-exception";
 import { registerUserSchema } from "../dtos/register-user.dto";
 import { UserResponseDto } from "../dtos/user-response.dto";
-import { PostHogService } from "../../../analytics/infrastructure/services/posthog.service";
 import { env } from "src/config/env";
 
 export interface RegisterUserInput {
@@ -36,19 +34,19 @@ export interface RegisterUserOutput {
 
 @Injectable()
 export class RegisterUser {
+  private readonly logger = new Logger(RegisterUser.name)
+
   constructor(
     @Inject("IUserRepository") private readonly userRepo: IUserRepository,
     @Inject("ISubscriptionRepository")
     private readonly subscriptionRepo: ISubscriptionRepository,
     @Inject("IInviteCodeRepository")
     private readonly inviteCodeRepo: IInviteCodeRepository,
-    @Inject("IEmailVerificationRepository")
-    private readonly emailVerificationRepo: IEmailVerificationRepository,
     @Inject("IEmailService") private readonly emailService: IEmailService,
     @Inject("IAuditLogRepository")
     private readonly auditLogRepo: IAuditLogRepository,
-    private readonly prisma: PrismaService,
-    private readonly postHogService: PostHogService,
+    @Inject("ITransactionManager") private readonly txManager: ITransactionManager,
+    @Inject("IAnalyticsService") private readonly analytics: IAnalyticsService,
   ) {}
 
   async execute(input: RegisterUserInput): Promise<RegisterUserOutput> {
@@ -79,8 +77,10 @@ export class RegisterUser {
       university: data.university,
     });
 
-    const createdUser = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
+    const transactionResult = await this.txManager.run(
+      async (txRaw: unknown) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const tx = txRaw as any
         const dbUser = await tx.user.create({
           data: {
             email: user.email,
@@ -117,23 +117,32 @@ export class RegisterUser {
           if (invite) await this.inviteCodeRepo.markAsUsed(invite.id, dbUser.id);
         }
 
-        return dbUser;
+        const rawToken = randomBytes(32).toString("hex");
+        const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+        const emailVerification = EmailVerification.create(dbUser.id, tokenHash);
+        await tx.emailVerification.create({
+          data: {
+            userId: emailVerification.userId,
+            tokenHash: emailVerification.tokenHash,
+            expiresAt: emailVerification.expiresAt,
+          },
+        });
+
+        return { dbUser, rawToken };
       },
     );
 
-    const rawToken = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
-    const emailVerification = EmailVerification.create(
-      createdUser.id,
-      tokenHash,
-    );
-    await this.emailVerificationRepo.create(emailVerification);
+    const { dbUser: createdUser, rawToken } = transactionResult;
 
-    await this.emailService.sendEmailConfirmation({
-      to: createdUser.email,
-      token: rawToken,
-      fullName: createdUser.fullName,
-    });
+    try {
+      await this.emailService.sendEmailConfirmation({
+        to: createdUser.email,
+        token: rawToken,
+        fullName: createdUser.fullName,
+      });
+    } catch (err) {
+      this.logger.error("Failed to send confirmation email", { userId: createdUser.id, error: err });
+    }
 
     await this.auditLogRepo.log({
       userId: createdUser.id,
@@ -143,7 +152,7 @@ export class RegisterUser {
       ipAddress: input.ipAddress,
     });
 
-    this.postHogService.track(createdUser.id, "user_registered", {
+    this.analytics.track(createdUser.id, "user_registered", {
       country: createdUser.country,
       university: createdUser.university,
       method: data.invite_code ? "invite" : "organic",

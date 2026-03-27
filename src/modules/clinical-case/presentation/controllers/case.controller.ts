@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Query,
   HttpCode,
   HttpStatus,
@@ -92,7 +93,7 @@ export class CaseController {
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
   @ApiResponse({ status: 403, description: 'Caso não disponível.' })
   @ApiResponse({ status: 404, description: 'Caso não encontrado.' })
-  async detail(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+  async detail(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
     const clinicalCase = await this.getCase.execute({ id, role: user.role })
     return safeCaseResponse(clinicalCase, user.role)
   }

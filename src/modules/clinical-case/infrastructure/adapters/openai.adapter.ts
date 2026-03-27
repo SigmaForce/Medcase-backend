@@ -15,15 +15,20 @@ export class OpenAiAdapter {
     userPrompt: string
     model?: string
     temperature?: number
+    maxTokens?: number
   }): Promise<string> {
-    const completion = await this.client.chat.completions.create({
-      model: params.model ?? 'gpt-4o',
-      temperature: params.temperature ?? 0.7,
-      messages: [
-        { role: 'system', content: params.systemPrompt },
-        { role: 'user', content: params.userPrompt },
-      ],
-    })
+    const completion = await this.client.chat.completions.create(
+      {
+        model: params.model ?? 'gpt-4o',
+        temperature: params.temperature ?? 0.7,
+        max_tokens: params.maxTokens ?? 2000,
+        messages: [
+          { role: 'system', content: params.systemPrompt },
+          { role: 'user', content: params.userPrompt },
+        ],
+      },
+      { signal: AbortSignal.timeout(30_000) },
+    )
 
     const content = completion.choices[0]?.message?.content
     if (!content) {

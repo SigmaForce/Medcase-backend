@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Post } from '@nestjs/common'
+import { Body, Controller, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import {
   ApiBearerAuth,
   ApiBody,
@@ -20,6 +21,7 @@ export class MessageController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ message: { limit: 20, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Enviar mensagem',
     description: 'Envia uma mensagem para o paciente virtual na sessão.',
@@ -38,7 +40,7 @@ export class MessageController {
   @ApiResponse({ status: 400, description: 'Sessão já finalizada, mensagem vazia ou limite atingido.' })
   @ApiResponse({ status: 403, description: 'Sem permissão para enviar mensagem nesta sessão.' })
   async send(
-    @Param('id') sessionId: string,
+    @Param('id', ParseUUIDPipe) sessionId: string,
     @Body(new ZodValidationPipe(sendMessageSchema)) body: unknown,
     @CurrentUser() user: JwtPayload,
   ) {

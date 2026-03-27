@@ -90,6 +90,7 @@ const mockSubscriptionRepo = {
   create: jest.fn(),
   update: jest.fn(),
 };
+const mockQueueRepo = { create: jest.fn(), findByCaseId: jest.fn() };
 const mockCaseGeneratorService = { generate: jest.fn() };
 
 describe("GenerateCase", () => {
@@ -101,6 +102,7 @@ describe("GenerateCase", () => {
       mockCaseRepo as any,
       mockSpecialtyRepo as any,
       mockSubscriptionRepo as any,
+      mockQueueRepo as any,
       mockCaseGeneratorService as any,
     );
   });
@@ -176,6 +178,7 @@ describe("GenerateCase", () => {
       availableExams: {},
     });
     mockCaseRepo.create.mockResolvedValue(savedCase);
+    mockQueueRepo.create.mockResolvedValue(undefined);
     mockSubscriptionRepo.update.mockResolvedValue(undefined);
 
     const result = await useCase.execute(baseInput);
@@ -225,6 +228,7 @@ describe("GenerateCase", () => {
       availableExams: {},
     });
     mockCaseRepo.create.mockResolvedValue(savedCase);
+    mockQueueRepo.create.mockResolvedValue(undefined);
     mockSubscriptionRepo.update.mockResolvedValue(undefined);
 
     const result = await useCase.execute({

@@ -22,6 +22,7 @@ const makeSubscriptionRepo = (): jest.Mocked<ISubscriptionRepository> =>
     upgrade: jest.fn(),
     downgrade: jest.fn(),
     resetUsage: jest.fn(),
+    findDueForReset: jest.fn(),
   }) as jest.Mocked<ISubscriptionRepository>
 
 const makeEmailService = (): jest.Mocked<NotificationEmailService> =>

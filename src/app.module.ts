@@ -28,6 +28,8 @@ import { env } from './config/env'
       { name: 'login', ttl: 900000, limit: 50 },
       { name: 'forgot', ttl: 3600000, limit: 20 },
       { name: 'resend', ttl: 120000, limit: 10 },
+      { name: 'message', ttl: 60000, limit: 20 },
+      { name: 'generate', ttl: 60000, limit: 5 },
     ]),
     SubscriptionModule,
     AnalyticsModule,

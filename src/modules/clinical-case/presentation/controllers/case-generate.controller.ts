@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Post,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import {
   ApiBearerAuth,
   ApiBody,
@@ -25,6 +26,7 @@ export class CaseGenerateController {
 
   @Post('generate')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ generate: { limit: 5, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Gerar caso clínico',
     description: 'Gera um caso clínico com IA (GPT-4o). Requer plano pro ou admin. Consome 1 geração.',

@@ -26,11 +26,20 @@ export class GetPortalUrl {
     if (!sub?.provider) throw new DomainException('NO_PORTAL_AVAILABLE', 404)
 
     if (sub.provider === 'stripe') {
-      if (!sub.externalCustomer) throw new DomainException('NO_PORTAL_AVAILABLE', 404)
-      const result = await this.stripeAdapter.createBillingPortalSession(
-        sub.externalCustomer,
-        `${env.APP_URL}/dashboard`,
-      )
+      let customerId = sub.externalCustomer
+
+      if (!customerId) {
+        if (!sub.externalSubId) throw new DomainException('NO_PORTAL_AVAILABLE', 404)
+        try {
+          customerId = await this.stripeAdapter.retrieveCustomerIdFromSubscription(sub.externalSubId)
+          sub.externalCustomer = customerId
+          await this.subscriptionRepo.update(sub)
+        } catch {
+          throw new DomainException('NO_PORTAL_AVAILABLE', 404)
+        }
+      }
+
+      const result = await this.stripeAdapter.createBillingPortalSession(customerId, `${env.APP_URL}/dashboard`)
       return { portal_url: result.url, provider: 'stripe' }
     }
 

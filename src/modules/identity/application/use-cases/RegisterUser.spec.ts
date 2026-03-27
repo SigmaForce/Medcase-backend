@@ -18,17 +18,17 @@ const mockDbUser = {
 const mockTx = {
   user: { create: jest.fn().mockResolvedValue(mockDbUser) },
   subscription: { create: jest.fn().mockResolvedValue({}) },
+  emailVerification: { create: jest.fn().mockResolvedValue({}) },
 }
 
 const mockUserRepo = { findByEmail: jest.fn() }
 const mockSubscriptionRepo = {}
 const mockInviteCodeRepo = { findValid: jest.fn(), markAsUsed: jest.fn() }
-const mockEmailVerificationRepo = { create: jest.fn() }
 const mockEmailService = { sendEmailConfirmation: jest.fn() }
 const mockAuditLogRepo = { log: jest.fn() }
-const mockPostHogService = { track: jest.fn() }
-const mockPrisma = {
-  $transaction: jest.fn().mockImplementation((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
+const mockAnalyticsService = { track: jest.fn() }
+const mockTxManager = {
+  run: jest.fn().mockImplementation((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
 }
 
 const validInput = {
@@ -48,17 +48,15 @@ describe('RegisterUser', () => {
       mockUserRepo as any,
       mockSubscriptionRepo as any,
       mockInviteCodeRepo as any,
-      mockEmailVerificationRepo as any,
       mockEmailService as any,
       mockAuditLogRepo as any,
-      mockPrisma as any,
-      mockPostHogService as any,
+      mockTxManager as any,
+      mockAnalyticsService as any,
     )
   })
 
   it('registers a user successfully', async () => {
     mockUserRepo.findByEmail.mockResolvedValue(null)
-    mockEmailVerificationRepo.create.mockResolvedValue(undefined)
     mockEmailService.sendEmailConfirmation.mockResolvedValue(undefined)
     mockAuditLogRepo.log.mockResolvedValue(undefined)
 
@@ -68,12 +66,12 @@ describe('RegisterUser', () => {
     expect(result.message).toContain('e-mail')
     expect(mockTx.user.create).toHaveBeenCalledTimes(1)
     expect(mockTx.subscription.create).toHaveBeenCalledTimes(1)
-    expect(mockEmailVerificationRepo.create).toHaveBeenCalledTimes(1)
+    expect(mockTx.emailVerification.create).toHaveBeenCalledTimes(1)
     expect(mockEmailService.sendEmailConfirmation).toHaveBeenCalledTimes(1)
     expect(mockAuditLogRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.registered' }),
     )
-    expect(mockPostHogService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ country: 'BR' }))
+    expect(mockAnalyticsService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ country: 'BR' }))
   })
 
   it('throws EMAIL_ALREADY_EXISTS when email is taken', async () => {
@@ -100,14 +98,13 @@ describe('RegisterUser', () => {
     mockUserRepo.findByEmail.mockResolvedValue(null)
     mockInviteCodeRepo.findValid.mockResolvedValue({ id: 'invite-1', trialDays: 30 })
     mockInviteCodeRepo.markAsUsed.mockResolvedValue(undefined)
-    mockEmailVerificationRepo.create.mockResolvedValue(undefined)
     mockEmailService.sendEmailConfirmation.mockResolvedValue(undefined)
     mockAuditLogRepo.log.mockResolvedValue(undefined)
 
     const result = await useCase.execute({ ...validInput, invite_code: 'BETA-ABC123' })
 
     expect(result.user.email).toBe('alice@example.com')
-    expect(mockPostHogService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ method: 'invite' }))
+    expect(mockAnalyticsService.track).toHaveBeenCalledWith('user-db-1', 'user_registered', expect.objectContaining({ method: 'invite' }))
   })
 
   it('throws INVALID_OR_EXPIRED_INVITE for invalid invite code', async () => {

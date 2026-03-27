@@ -1,10 +1,12 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common'
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import { ZodError } from 'zod'
 import { Response } from 'express'
 import { DomainException } from '../../../errors/domain-exception'
 
 @Catch()
 export class DomainExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(DomainExceptionFilter.name)
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
@@ -27,7 +29,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
       return response.status(exception.getStatus()).json(exception.getResponse())
     }
 
-    console.error('Unhandled exception:', exception)
+    this.logger.error('Unhandled exception', { exception })
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'INTERNAL_ERROR' })
   }
 }

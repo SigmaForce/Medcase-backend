@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Get, Param, ParseUUIDPipe, Body, HttpCode, HttpStatus } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.pipe'
@@ -18,7 +18,7 @@ export class RatingController {
   @Post(':id/ratings')
   @HttpCode(HttpStatus.CREATED)
   async submit(
-    @Param('id') caseId: string,
+    @Param('id', ParseUUIDPipe) caseId: string,
     @CurrentUser() user: JwtPayload,
     @Body(new ZodValidationPipe(submitRatingSchema)) body: SubmitRatingDto,
   ) {
@@ -33,7 +33,7 @@ export class RatingController {
 
   @Get(':id/ratings/mine')
   @HttpCode(HttpStatus.OK)
-  async mine(@Param('id') caseId: string, @CurrentUser() user: JwtPayload) {
+  async mine(@Param('id', ParseUUIDPipe) caseId: string, @CurrentUser() user: JwtPayload) {
     return this.getMyRating.execute({ caseId, userId: user.sub })
   }
 }

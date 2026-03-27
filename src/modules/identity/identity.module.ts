@@ -4,6 +4,9 @@ import { env } from '../../config/env'
 import { SubscriptionModule } from '../subscription/subscription.module'
 import { AnalyticsModule } from '../analytics/analytics.module'
 
+// Infrastructure services
+import { PrismaTransactionManager } from './infrastructure/services/prisma-transaction-manager'
+
 // Repositories
 import { PrismaUserRepository } from './infrastructure/repositories/prisma-user.repository'
 import { PrismaRefreshTokenRepository } from './infrastructure/repositories/prisma-refresh-token.repository'
@@ -51,6 +54,7 @@ import { UsersController } from './presentation/controllers/users.controller'
     }),
   ],
   providers: [
+    { provide: 'ITransactionManager', useClass: PrismaTransactionManager },
     { provide: 'IUserRepository', useClass: PrismaUserRepository },
     { provide: 'IRefreshTokenRepository', useClass: PrismaRefreshTokenRepository },
     { provide: 'IEmailVerificationRepository', useClass: PrismaEmailVerificationRepository },

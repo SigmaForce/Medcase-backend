@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import dayjs from 'dayjs'
 import { PrismaService } from '../../../../infra/database/prisma.service'
-import { IUserStreakRepository, AtRiskUser } from '../../domain/interfaces/user-streak-repository.interface'
+import { IUserStreakRepository, AtRiskUser, FindAtRiskOptions } from '../../domain/interfaces/user-streak-repository.interface'
 import { UserStreak } from '../../domain/entities/user-streak.entity'
 
 @Injectable()
@@ -33,7 +33,7 @@ export class PrismaUserStreakRepository implements IUserStreakRepository {
     return this.toDomain(record)
   }
 
-  async findAtRiskToday(): Promise<AtRiskUser[]> {
+  async findAtRiskToday(options?: FindAtRiskOptions): Promise<AtRiskUser[]> {
     const startOfToday = dayjs().startOf('day').toDate()
     const records = await this.prisma.userStreak.findMany({
       where: {
@@ -42,6 +42,8 @@ export class PrismaUserStreakRepository implements IUserStreakRepository {
         user: { isActive: true },
       },
       include: { user: { select: { email: true, fullName: true } } },
+      take: options?.take,
+      skip: options?.skip,
     })
     return records.map((r) => ({
       userId: r.userId,

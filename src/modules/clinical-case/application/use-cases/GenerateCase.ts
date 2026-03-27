@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { IClinicalCaseRepository } from '../../domain/interfaces/clinical-case-repository.interface'
 import { ISpecialtyRepository } from '../../domain/interfaces/specialty-repository.interface'
 import { ISubscriptionRepository } from '../../../subscription/domain/interfaces/subscription-repository.interface'
@@ -36,6 +36,8 @@ const isPlanAllowed = (subscription: Subscription | null, role: string): boolean
 
 @Injectable()
 export class GenerateCase {
+  private readonly logger = new Logger(GenerateCase.name)
+
   constructor(
     @Inject('IClinicalCaseRepository')
     private readonly caseRepo: IClinicalCaseRepository,
@@ -83,7 +85,7 @@ export class GenerateCase {
         countryContext: input.countryContext,
       })
     } catch (err) {
-      console.error('[GenerateCase] generation error:', err)
+      this.logger.error('Generation error', { userId: input.userId, specialtyId: input.specialtyId, error: err })
       if (subscription) {
         subscription.generationsUsed -= 1
         await this.subscriptionRepo.update(subscription)
