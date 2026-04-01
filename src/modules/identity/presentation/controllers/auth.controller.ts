@@ -5,9 +5,11 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common'
-import { Request } from 'express'
+import { Request, Response } from 'express'
+import { env } from '../../../../config/env'
 import { Throttle } from '@nestjs/throttler'
 import {
   ApiBearerAuth,
@@ -107,16 +109,21 @@ export class AuthController {
     description: 'Autenticado com sucesso.',
     schema: {
       properties: {
-        accessToken: { type: 'string' },
-        refreshToken: { type: 'string' },
+        user: { type: 'object' },
       },
     },
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   @ApiResponse({ status: 429, description: 'Muitas tentativas. Tente novamente em 15 minutos.' })
-  async login(@Body(new ZodValidationPipe(loginSchema)) body: unknown, @Req() req: Request) {
+  async login(
+    @Body(new ZodValidationPipe(loginSchema)) body: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const data = body as { email: string; password: string }
-    return this.loginUser.execute({ ...data, ipAddress: req.ip })
+    const { accessToken, refreshToken, user } = await this.loginUser.execute({ ...data, ipAddress: req.ip })
+    this.setAuthCookies(res, accessToken, refreshToken)
+    return { user }
   }
 
   @Public()
@@ -167,30 +174,17 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Renovar tokens', description: 'Troca o refresh token por um novo par de access + refresh tokens.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['refreshToken'],
-      properties: {
-        refreshToken: { type: 'string', example: 'abc123...' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Tokens renovados.',
-    schema: {
-      properties: {
-        accessToken: { type: 'string' },
-        refreshToken: { type: 'string' },
-      },
-    },
-  })
+  @ApiOperation({ summary: 'Renovar tokens', description: 'Troca o refresh token (cookie) por um novo par de access + refresh tokens.' })
+  @ApiResponse({ status: 200, description: 'Tokens renovados.' })
   @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado.' })
-  async refresh(@Body(new ZodValidationPipe(refreshTokenSchema)) body: unknown) {
-    const data = body as { refreshToken: string }
-    return this.refreshTokens.execute(data.refreshToken)
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const rawToken = (req.cookies as Record<string, string> | undefined)?.refresh_token ?? ''
+    const { accessToken, refreshToken } = await this.refreshTokens.execute(rawToken)
+    this.setAuthCookies(res, accessToken, refreshToken)
+    return {}
   }
 
   @Post('logout')
@@ -199,8 +193,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Encerrar sessão', description: 'Invalida o refresh token do usuário autenticado.' })
   @ApiResponse({ status: 204, description: 'Sessão encerrada.' })
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
-  async logout(@CurrentUser() user: JwtPayload) {
+  async logout(
+    @CurrentUser() user: JwtPayload,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.logoutUser.execute(user.sub)
+    this.clearAuthCookies(res)
   }
 
   @Public()
@@ -250,5 +248,17 @@ export class AuthController {
     const data = body as { token: string; newPassword: string }
     await this.resetPassword.execute(data.token, data.newPassword)
     return { message: 'Senha alterada com sucesso.' }
+  }
+
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
+    const isProd = env.NODE_ENV === 'production'
+    const base = { httpOnly: true, secure: isProd, sameSite: 'lax' as const }
+    res.cookie('access_token', accessToken, { ...base, maxAge: 3600 * 1000 })
+    res.cookie('refresh_token', refreshToken, { ...base, maxAge: 7 * 24 * 3600 * 1000 })
+  }
+
+  private clearAuthCookies(res: Response): void {
+    res.clearCookie('access_token')
+    res.clearCookie('refresh_token')
   }
 }

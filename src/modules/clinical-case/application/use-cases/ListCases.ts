@@ -7,6 +7,7 @@ export interface ListCasesInput {
   difficulty?: CaseDifficulty
   language?: CaseLanguage
   country?: CountryContext
+  type?: 'study' | 'revalida' | 'all'
   page: number
   limit: number
 }
@@ -21,11 +22,18 @@ export class ListCases {
   ) {}
 
   async execute(input: ListCasesInput): Promise<ListCasesOutput> {
+    const caseModeMap: Record<'study' | 'revalida' | 'all', string | undefined> = {
+      revalida: 'revalida',
+      study: 'study',
+      all: undefined,
+    }
+
     const filters: ListCasesFilters = {
       specialtyId: input.specialtyId,
       difficulty: input.difficulty,
       language: input.language,
       country: input.country,
+      caseMode: input.type ? caseModeMap[input.type] : undefined,
       page: input.page,
       limit: input.limit,
     }

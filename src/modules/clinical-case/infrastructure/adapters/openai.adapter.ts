@@ -20,7 +20,7 @@ export class OpenAiAdapter {
     const completion = await this.client.chat.completions.create(
       {
         model: params.model ?? 'gpt-4o',
-        temperature: params.temperature ?? 0.7,
+        temperature: params.temperature ?? 0.9,
         max_tokens: params.maxTokens ?? 2000,
         messages: [
           { role: 'system', content: params.systemPrompt },

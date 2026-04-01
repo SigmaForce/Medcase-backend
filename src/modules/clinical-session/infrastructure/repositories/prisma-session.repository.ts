@@ -24,6 +24,7 @@ export class PrismaSessionRepository implements ISessionRepository {
         status: session.status,
         isTimed: session.isTimed,
         timedLimitSecs: session.timedLimitSecs,
+        sessionType: session.sessionType,
         requestedExams: session.requestedExams,
         missedKeyExams: session.missedKeyExams,
       },
@@ -227,6 +228,7 @@ export class PrismaSessionRepository implements ISessionRepository {
       durationSecs: number | null
       isTimed: boolean
       timedLimitSecs: number
+      sessionType?: string
     },
   ): ClinicalSession {
     return ClinicalSession.create({
@@ -247,6 +249,7 @@ export class PrismaSessionRepository implements ISessionRepository {
       durationSecs: record.durationSecs,
       isTimed: record.isTimed,
       timedLimitSecs: record.timedLimitSecs,
+      sessionType: record.sessionType ?? 'study',
     })
   }
 

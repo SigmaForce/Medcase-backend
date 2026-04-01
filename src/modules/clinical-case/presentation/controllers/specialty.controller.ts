@@ -1,7 +1,9 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { SkipThrottle } from '@nestjs/throttler'
 import { ListSpecialties } from '../../application/use-cases/ListSpecialties'
 
+@SkipThrottle()
 @ApiTags('Specialties')
 @ApiBearerAuth()
 @Controller('specialties')

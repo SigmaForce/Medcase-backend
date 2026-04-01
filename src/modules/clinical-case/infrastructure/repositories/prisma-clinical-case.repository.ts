@@ -54,6 +54,12 @@ export class PrismaClinicalCaseRepository implements IClinicalCaseRepository {
       where.countryContext = filters.country
     }
 
+    if (filters.caseMode === 'revalida') {
+      where.caseBrief = { path: ['case_mode'], equals: 'revalida' }
+    } else if (filters.caseMode === 'study') {
+      where.NOT = { caseBrief: { path: ['case_mode'], equals: 'revalida' } }
+    }
+
     const skip = (filters.page - 1) * filters.limit
     const take = filters.limit
 

@@ -1,5 +1,12 @@
 name: CD
 
+# Secrets necessários (Settings → Secrets → Actions):
+#   RAILWAY_TOKEN   — token da conta Railway (railway login → railway whoami --token)
+#   DATABASE_URL    — connection string PostgreSQL de produção
+#
+# Variables necessárias (Settings → Variables → Actions):
+#   RAILWAY_PUBLIC_URL — URL pública do serviço Railway
+
 on:
   workflow_run:
     workflows: [CI]
@@ -19,35 +26,29 @@ jobs:
       name: production
       url: ${{ vars.RAILWAY_PUBLIC_URL }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version-file: '.node-version'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
+      - id: pnpm-cache
         run: echo "store=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
-      - name: Restore pnpm store cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.store }}
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             pnpm-store-${{ runner.os }}-
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
         run: pnpm prisma:generate
@@ -59,10 +60,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
       - name: Deploy to Railway
-        run: railway up --detach
+        run: pnpm dlx @railway/cli up --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

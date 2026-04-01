@@ -5,9 +5,11 @@ import { DomainException } from '../../../../errors/domain-exception'
 
 export interface FeedbackGeneratorInput {
   correctDiagnosis: string
+  differential: string[]
   expectedManagement: string
   keyFindings: string[]
   keyExams: string[]
+  teachingPoints: string[]
   submittedDiagnosis: string
   submittedManagement: string
   requestedExams: string[]
@@ -30,6 +32,9 @@ export interface FeedbackResult {
     exams: FeedbackDimension
     management: FeedbackDimension
   }
+  strengths: string[]
+  improvements: string[]
+  teaching_points: string[]
 }
 
 @Injectable()
@@ -44,16 +49,39 @@ export class FeedbackGeneratorService {
       .join('\n')
 
     const systemPrompt =
-      'Você é um professor de medicina avaliando um estudante em simulação clínica. ' +
-      'Avalie de forma construtiva. Retorne APENAS JSON válido.'
+      'Você é um preceptor clínico avaliando um estudante de medicina em simulação clínica.\n' +
+      'Seu papel é duplo: avaliar com rigor E ensinar com feedback formativo e construtivo.\n\n' +
+      'REGRAS DE AVALIAÇÃO POR DIMENSÃO:\n' +
+      '- history_taking: qualidade e cobertura da anamnese (início, duração, caracterização da queixa, sintomas associados, antecedentes)\n' +
+      '- differential: se o estudante raciocinou além do diagnóstico final e considerou os diferenciais clinicamente relevantes\n' +
+      '- diagnosis: precisão do diagnóstico final e qualidade da justificativa clínica apresentada\n' +
+      '- exams: racionalidade dos exames solicitados, cobertura dos exames-chave, ausência de exames desnecessários\n' +
+      '- management: adequação da conduta terapêutica proposta\n\n' +
+      'REGRAS PARA ANÁLISE POR DIMENSÃO:\n' +
+      '- Cite ações concretas do transcript (o que foi feito e o que faltou)\n' +
+      '- 2-3 frases objetivas, conectando ao impacto clínico\n\n' +
+      'REGRAS PARA STRENGTHS:\n' +
+      '- Liste 2-3 ações concretas que demonstraram boa prática clínica\n' +
+      '- Inclua contexto clínico: por que aquela ação é relevante para este caso específico\n\n' +
+      'REGRAS PARA IMPROVEMENTS:\n' +
+      '- Identifique as 2-3 lacunas mais impactantes\n' +
+      '- Para cada uma: o que deveria ter sido feito + por que é clinicamente importante\n' +
+      '- Seja construtivo, não punitivo\n\n' +
+      'REGRAS PARA TEACHING_POINTS:\n' +
+      '- Reformule os pontos de aprendizado do caso de forma didática\n' +
+      '- Conecte cada ponto ao desempenho observado do estudante\n' +
+      '- Priorize os pontos mais relevantes para as lacunas identificadas\n\n' +
+      'Retorne APENAS JSON válido.'
 
     const userPrompt = `Avalie o desempenho do estudante nesta simulação clínica.
 
 CASO CORRETO:
 - Diagnóstico: ${input.correctDiagnosis}
+- Diagnósticos diferenciais esperados: ${input.differential.join(', ')}
 - Conduta esperada: ${input.expectedManagement}
 - Achados-chave: ${input.keyFindings.join(', ')}
 - Exames-chave necessários: ${input.keyExams.join(', ')}
+- Pontos de aprendizado do caso: ${input.teachingPoints.join('; ')}
 
 DESEMPENHO DO ESTUDANTE:
 - Diagnóstico submetido: ${input.submittedDiagnosis}
@@ -74,7 +102,10 @@ Retorne JSON com esta estrutura exata:
     "diagnosis": { "score": number (0-100), "analysis": string },
     "exams": { "score": number (0-100), "analysis": string },
     "management": { "score": number (0-100), "analysis": string }
-  }
+  },
+  "strengths": [string, string],
+  "improvements": [string, string],
+  "teaching_points": [string, string]
 }`
 
     try {
@@ -86,6 +117,7 @@ Retorne JSON com esta estrutura exata:
         ],
         responseFormat: 'json_object',
         temperature: 0.3,
+        maxTokens: 3000,
       })
 
       const parsed = JSON.parse(result.content) as FeedbackResult
@@ -105,6 +137,9 @@ Retorne JSON com esta estrutura exata:
       )
 
       parsed.correct_diagnosis = input.correctDiagnosis
+      parsed.strengths = parsed.strengths ?? []
+      parsed.improvements = parsed.improvements ?? []
+      parsed.teaching_points = parsed.teaching_points ?? []
 
       return parsed
     } catch {

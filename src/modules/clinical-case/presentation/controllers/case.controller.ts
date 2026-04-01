@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import {
   ApiBearerAuth,
@@ -33,6 +34,7 @@ const safeCaseResponse = (c: ClinicalCase, role?: string) => {
     language: c.language,
     countryContext: c.countryContext,
     status: c.status,
+    case_mode: (c.caseBrief?.case_mode as string) ?? 'study',
     avgRating: c.avgRating,
     totalRatings: c.totalRatings,
     createdAt: c.createdAt,
@@ -41,6 +43,7 @@ const safeCaseResponse = (c: ClinicalCase, role?: string) => {
   }
 }
 
+@SkipThrottle()
 @ApiTags('Cases')
 @ApiBearerAuth()
 @Controller('cases')
@@ -60,6 +63,7 @@ export class CaseController {
   @ApiQuery({ name: 'difficulty', required: false, enum: ['beginner', 'intermediate', 'advanced'] })
   @ApiQuery({ name: 'language', required: false, enum: ['pt', 'es'] })
   @ApiQuery({ name: 'country', required: false, enum: ['BR', 'PY'] })
+  @ApiQuery({ name: 'type', required: false, enum: ['study', 'revalida', 'all'], description: 'Filtrar por modo (default all)' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Página (default 1)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Itens por página (default 20, max 50)' })
   @ApiResponse({ status: 200, description: 'Lista paginada de casos.' })
@@ -72,6 +76,7 @@ export class CaseController {
       difficulty: query.difficulty,
       language: query.language,
       country: query.country,
+      type: query.type,
       page: query.page,
       limit: query.limit,
     })

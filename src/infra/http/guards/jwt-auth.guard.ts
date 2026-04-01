@@ -21,7 +21,7 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) return true
 
     const request = context.switchToHttp().getRequest<Request>()
-    const token = this.extractBearerToken(request)
+    const token = this.extractToken(request)
 
     if (!token) {
       throw new UnauthorizedException({ error: 'MISSING_TOKEN' })
@@ -37,7 +37,9 @@ export class JwtAuthGuard implements CanActivate {
     return true
   }
 
-  private extractBearerToken(request: Request): string | null {
+  private extractToken(request: Request): string | null {
+    const cookieToken = (request.cookies as Record<string, string> | undefined)?.access_token
+    if (cookieToken) return cookieToken
     const [type, token] = request.headers.authorization?.split(' ') ?? []
     return type === 'Bearer' ? token : null
   }

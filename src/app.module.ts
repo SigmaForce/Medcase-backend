@@ -24,6 +24,7 @@ import { env } from './config/env'
     ScheduleModule.forRoot(),
     JwtModule.register({ secret: env.JWT_SECRET }),
     ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60000, limit: 120 },
       { name: 'register', ttl: 3600000, limit: 20 },
       { name: 'login', ttl: 900000, limit: 50 },
       { name: 'forgot', ttl: 3600000, limit: 20 },

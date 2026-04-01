@@ -5,6 +5,7 @@ export interface ListCasesFilters {
   difficulty?: CaseDifficulty
   language?: CaseLanguage
   country?: CountryContext
+  caseMode?: string
   page: number
   limit: number
 }

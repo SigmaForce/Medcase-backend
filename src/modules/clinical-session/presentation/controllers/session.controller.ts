@@ -9,6 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common'
+import { SkipThrottle } from '@nestjs/throttler'
 import {
   ApiBearerAuth,
   ApiBody,
@@ -25,6 +26,7 @@ import { ListSessions } from '../../application/use-cases/ListSessions'
 import { GetSession } from '../../application/use-cases/GetSession'
 import { startSessionSchema } from '../../application/dtos/start-session.dto'
 
+@SkipThrottle()
 @ApiTags('Sessions')
 @ApiBearerAuth()
 @Controller('sessions')

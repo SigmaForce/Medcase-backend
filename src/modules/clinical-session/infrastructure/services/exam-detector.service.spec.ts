@@ -42,6 +42,18 @@ describe('ExamDetectorService', () => {
     expect(result.isExamRequest).toBe(false)
   })
 
+  it('does not detect exam request in diagnostic reasoning containing "exame"', () => {
+    const result = service.detect(
+      'o diagnóstico é de anemia ferropriva, mesmo com exame inicial de sangue oculto negativo',
+    )
+    expect(result.isExamRequest).toBe(false)
+  })
+
+  it('does not detect exam request when message mentions "resultado" without action keywords', () => {
+    const result = service.detect('O resultado da consulta foi satisfatório.')
+    expect(result.isExamRequest).toBe(false)
+  })
+
   it('does not detect exam request in empty message', () => {
     const result = service.detect('')
     expect(result.isExamRequest).toBe(false)

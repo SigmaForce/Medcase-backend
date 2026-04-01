@@ -233,6 +233,7 @@ model Session {
   durationSecs        Int?          @map("duration_secs")
   isTimed             Boolean       @default(false) @map("is_timed")
   timedLimitSecs      Int           @default(2700) @map("timed_limit_secs")
+  sessionType         String        @default("study") @map("session_type")
 
   user     User         @relation(fields: [userId], references: [id])
   case     ClinicalCase @relation(fields: [caseId], references: [id])

@@ -58,12 +58,16 @@ const mockOrchestrator = {
   orchestrate: jest.fn(),
 }
 
+const mockRevalidaOrchestrator = {
+  orchestrate: jest.fn(),
+}
+
 describe('SendMessage', () => {
   let useCase: SendMessage
 
   beforeEach(() => {
     jest.clearAllMocks()
-    useCase = new SendMessage(mockRepo as never, mockOrchestrator as never)
+    useCase = new SendMessage(mockRepo as never, mockOrchestrator as never, mockRevalidaOrchestrator as never)
   })
 
   it('sends message and returns assistant response', async () => {

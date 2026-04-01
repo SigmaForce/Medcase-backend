@@ -17,6 +17,7 @@ export interface CreateClinicalSessionProps {
   durationSecs?: number | null
   isTimed?: boolean
   timedLimitSecs?: number
+  sessionType?: string
 }
 
 export class ClinicalSession {
@@ -34,6 +35,7 @@ export class ClinicalSession {
   durationSecs: number | null
   isTimed: boolean
   timedLimitSecs: number
+  sessionType: string
 
   static create(props: CreateClinicalSessionProps): ClinicalSession {
     if (!props.userId || !props.caseId) {
@@ -55,6 +57,7 @@ export class ClinicalSession {
     session.durationSecs = props.durationSecs ?? null
     session.isTimed = props.isTimed ?? false
     session.timedLimitSecs = props.timedLimitSecs ?? 2700
+    session.sessionType = props.sessionType ?? 'study'
     return session
   }
 

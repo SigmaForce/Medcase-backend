@@ -63,7 +63,7 @@ export class CaseGeneratorService {
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const raw = await this.openAi.chatCompletion({ systemPrompt, userPrompt })
+        const raw = await this.openAi.chatCompletion({ systemPrompt, userPrompt, temperature: 0.95 })
         const parsed = this.parseAndValidate(raw)
         return parsed
       } catch (err) {
@@ -99,7 +99,13 @@ REGRAS DO CASO:
   * Para exames de imagem: descrição radiológica objetiva (localização, tamanho, características morfológicas)
   * Para ECG: ritmo, frequência, eixo, alterações de segmento/onda descritas objetivamente
   * NUNCA inclua conclusão diagnóstica, hipótese ou impressão que revele o diagnóstico — apenas achados objetivos
-  * NUNCA use resultados vagos como "alterado" ou "dentro do esperado" sem valores`
+  * NUNCA use resultados vagos como "alterado" ou "dentro do esperado" sem valores
+
+DIVERSIDADE OBRIGATÓRIA:
+- Varie as profissões dos pacientes — exemplos: professor, engenheiro, aposentado, pedreiro, costureira, estudante, cozinheiro, faxineiro, vendedor ambulante, pescador, enfermeira, mecânico, cabeleireira, segurança, auxiliar administrativo, agricultor, comerciante, zelador, motorista de ônibus, auxiliar de enfermagem, garçom, eletricista, contador
+- Não se limite às doenças mais frequentes ou "clássicas" da especialidade — explore o espectro completo
+- Varie faixa etária amplamente: de 18 a 80 anos
+- Alterne sexo entre casos: M e F`
   }
 
   private buildUserPrompt(input: GenerateInput): string {
@@ -131,7 +137,9 @@ Retorne o JSON no seguinte formato:
     "ecg": [],
     "other": []
   }
-}`
+}
+
+Seed de variação: ${Math.random().toString(36).substring(2, 10)}`
   }
 
   private parseAndValidate(raw: string): GeneratedCaseData {

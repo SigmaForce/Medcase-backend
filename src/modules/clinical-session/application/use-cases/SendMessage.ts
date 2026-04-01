@@ -3,6 +3,7 @@ import { ISessionRepository } from '../../domain/interfaces/session-repository.i
 import { DomainException } from '../../../../errors/domain-exception'
 import { sendMessageSchema } from '../dtos/send-message.dto'
 import { ChatOrchestratorService } from '../../infrastructure/services/chat-orchestrator.service'
+import { RevalidaOrchestratorService } from '../../infrastructure/services/revalida-orchestrator.service'
 
 export interface SendMessageInput {
   sessionId: string
@@ -31,6 +32,7 @@ export class SendMessage {
   constructor(
     @Inject('ISessionRepository') private readonly sessionRepo: ISessionRepository,
     private readonly chatOrchestrator: ChatOrchestratorService,
+    private readonly revalidaOrchestrator: RevalidaOrchestratorService,
   ) {}
 
   async execute(input: SendMessageInput): Promise<SendMessageOutput> {
@@ -63,11 +65,22 @@ export class SendMessage {
       throw new DomainException('CASE_NOT_FOUND', 404)
     }
 
-    const assistantMessage = await this.chatOrchestrator.orchestrate({
-      session,
-      userContent: data.content,
-      clinicalCase,
-    })
+    const brief = clinicalCase.caseBrief as Record<string, unknown>
+    const patientProfile = (brief.patient_profile as Record<string, unknown>) ?? {}
+
+    const assistantMessage =
+      session.sessionType === 'revalida'
+        ? await this.revalidaOrchestrator.orchestrate({
+            session,
+            userContent: data.content,
+            clinicalCase,
+            patientProfile,
+          })
+        : await this.chatOrchestrator.orchestrate({
+            session,
+            userContent: data.content,
+            clinicalCase,
+          })
 
     const newMessagesCount = messagesCount + 2 // user + assistant
     const messagesRemaining = Math.max(0, MAX_MESSAGES - newMessagesCount)

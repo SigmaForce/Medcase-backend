@@ -14,6 +14,7 @@ export interface ListSessionsOutput {
     id: string
     case_id: string
     status: string
+    session_type: string
     is_timed: boolean
     started_at: Date
     completed_at: Date | null
@@ -56,6 +57,7 @@ export class ListSessions {
         id: s.id,
         case_id: s.caseId,
         status: s.status,
+        session_type: s.sessionType,
         is_timed: s.isTimed,
         started_at: s.startedAt,
         completed_at: s.completedAt,

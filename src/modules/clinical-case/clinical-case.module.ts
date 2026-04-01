@@ -9,16 +9,19 @@ import { PrismaReviewQueueRepository } from '../curation/infrastructure/reposito
 // Adapters & Services
 import { OpenAiAdapter } from './infrastructure/adapters/openai.adapter'
 import { CaseGeneratorService } from './infrastructure/services/case-generator.service'
+import { RevalidaCaseGeneratorService } from './infrastructure/services/revalida-case-generator.service'
 
 // Use Cases
 import { ListCases } from './application/use-cases/ListCases'
 import { GetCase } from './application/use-cases/GetCase'
 import { GenerateCase } from './application/use-cases/GenerateCase'
+import { GenerateRevalidaCase } from './application/use-cases/GenerateRevalidaCase'
 import { ListSpecialties } from './application/use-cases/ListSpecialties'
 
 // Controllers
 import { CaseController } from './presentation/controllers/case.controller'
 import { CaseGenerateController } from './presentation/controllers/case-generate.controller'
+import { RevalidaCaseController } from './presentation/controllers/revalida-case.controller'
 import { SpecialtyController } from './presentation/controllers/specialty.controller'
 
 @Module({
@@ -29,12 +32,14 @@ import { SpecialtyController } from './presentation/controllers/specialty.contro
     { provide: 'IReviewQueueRepository', useClass: PrismaReviewQueueRepository },
     OpenAiAdapter,
     CaseGeneratorService,
+    RevalidaCaseGeneratorService,
     ListCases,
     GetCase,
     GenerateCase,
+    GenerateRevalidaCase,
     ListSpecialties,
   ],
-  controllers: [CaseController, CaseGenerateController, SpecialtyController],
-  exports: ['IClinicalCaseRepository', 'ISpecialtyRepository', CaseGeneratorService],
+  controllers: [CaseController, CaseGenerateController, RevalidaCaseController, SpecialtyController],
+  exports: ['IClinicalCaseRepository', 'ISpecialtyRepository', CaseGeneratorService, RevalidaCaseGeneratorService],
 })
 export class ClinicalCaseModule {}
