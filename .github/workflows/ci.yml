@@ -36,23 +36,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - id: pnpm-cache
-        run: echo "store=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache@v4
         with:
-          path: ${{ steps.pnpm-cache.outputs.store }}
+          path: ~/.local/share/pnpm/store
           key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-store-${{ runner.os }}-
+          restore-keys: pnpm-store-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
 
@@ -72,13 +68,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache/restore@v4
         with:
@@ -97,13 +93,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache/restore@v4
         with:
@@ -129,13 +125,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-
       - uses: pnpm/action-setup@v4
         with:
           version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache/restore@v4
         with:
