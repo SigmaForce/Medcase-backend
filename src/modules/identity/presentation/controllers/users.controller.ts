@@ -74,6 +74,16 @@ export class UsersController {
   @Patch('me')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Atualizar perfil', description: 'Atualiza dados do perfil do usuário autenticado.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        full_name: { type: 'string', example: 'João Silva' },
+        country: { type: 'string', enum: ['BR', 'PY'], example: 'BR' },
+        university: { type: 'string', example: 'UFMS' },
+      },
+    },
+  })
   @ApiResponse({ status: 200, description: 'Perfil atualizado.' })
   @ApiResponse({ status: 401, description: 'Não autenticado.' })
   async update(
