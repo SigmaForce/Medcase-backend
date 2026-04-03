@@ -15,7 +15,7 @@ const bootstrap = async () => {
     crossOriginEmbedderPolicy: env.NODE_ENV === 'production',
   }))
   app.use(cookieParser())
-  app.enableCors({ origin: env.APP_URL, credentials: true })
+  app.enableCors({ origin: [env.APP_URL, env.FRONTEND_URL], credentials: true })
 
   if (env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()

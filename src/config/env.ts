@@ -12,6 +12,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1),
   RESEND_FROM_EMAIL: z.email(),
   APP_URL: z.string().min(1),
+  FRONTEND_URL: z.url(),
   OPENAI_API_KEY: z.string().min(1),
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
