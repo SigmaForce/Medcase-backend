@@ -59,10 +59,6 @@ export class StartRevalidaSession {
       )
     }
 
-    if (subscription.plan !== 'pro') {
-      throw new DomainException('REVALIDA_MODE_REQUIRES_PRO', 403)
-    }
-
     const clinicalCase = await this.sessionRepo.findCaseById(data.case_id)
     if (!clinicalCase || clinicalCase.status !== 'approved') {
       throw new DomainException('CASE_NOT_FOUND', 404)

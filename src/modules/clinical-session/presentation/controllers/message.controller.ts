@@ -21,7 +21,7 @@ export class MessageController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ message: { limit: 20, ttl: 60_000 } })
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Enviar mensagem',
     description: 'Envia uma mensagem para o paciente virtual na sessão.',

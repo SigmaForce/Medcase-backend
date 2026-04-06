@@ -159,13 +159,18 @@ describe('StartRevalidaSession', () => {
     })
   })
 
-  it('throws REVALIDA_MODE_REQUIRES_PRO for free plan', async () => {
-    mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ plan: 'free' }))
+  it('creates revalida session successfully for free plan', async () => {
+    mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ plan: 'free', casesLimit: 5, casesUsed: 2 }))
+    mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
+    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.create.mockResolvedValue(makeSession())
+    mockRepo.addMessage.mockResolvedValue(makeMessage())
 
-    await expect(useCase.execute({ userId: USER_ID, caseId: CASE_ID })).rejects.toMatchObject({
-      code: 'REVALIDA_MODE_REQUIRES_PRO',
-      statusCode: 403,
-    })
+    const result = await useCase.execute({ userId: USER_ID, caseId: CASE_ID })
+
+    expect(result.session.session_type).toBe('revalida')
+    expect(result.subscription.cases_remaining).toBe(2)
   })
 
   it('throws CASE_NOT_FOUND when case does not exist', async () => {
