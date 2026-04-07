@@ -36,14 +36,14 @@ export class NotificationEmailService {
     switch (template) {
       case 'welcome':
         return {
-          subject: 'Sua conta está pronta — RevalidAI',
-          html: `<h1>Bem-vindo ao RevalidAI, ${data.first_name}!</h1>
+          subject: 'Sua conta está pronta — MedCase',
+          html: `<h1>Bem-vindo ao MedCase, ${data.first_name}!</h1>
 <p>Sua conta está pronta. Você tem <strong>${data.cases_limit} casos</strong> gratuitos por mês.</p>
 <p>Bons estudos!</p>`,
         }
       case 'limit-reached':
         return {
-          subject: 'Você usou seus 5 casos deste mês — RevalidAI',
+          subject: 'Você usou seus 5 casos deste mês — MedCase',
           html: `<h1>Olá, ${data.first_name}!</h1>
 <p>Você atingiu o limite de casos gratuitos deste mês.</p>
 <p>Seu limite será renovado em <strong>${data.reset_date}</strong>.</p>
@@ -51,7 +51,7 @@ export class NotificationEmailService {
         }
       case 'upgrade-confirmed':
         return {
-          subject: 'Bem-vindo ao Pro! — RevalidAI',
+          subject: 'Bem-vindo ao Pro! — MedCase',
           html: `<h1>Parabéns, ${data.first_name}!</h1>
 <p>Seu plano Pro está ativo. Próxima cobrança: <strong>${data.next_billing_date}</strong>.</p>
 <p>Valor: <strong>${data.price}</strong></p>
@@ -59,7 +59,7 @@ export class NotificationEmailService {
         }
       case 'payment-failed':
         return {
-          subject: 'Problema com seu pagamento — RevalidAI',
+          subject: 'Problema com seu pagamento — MedCase',
           html: `<h1>Olá, ${data.first_name},</h1>
 <p>Tivemos um problema ao processar seu pagamento.</p>
 <p>Tentaremos novamente em <strong>${data.retry_date}</strong>.</p>
@@ -67,7 +67,7 @@ export class NotificationEmailService {
         }
       case 'downgraded':
         return {
-          subject: 'Seu plano voltou para o Free — RevalidAI',
+          subject: 'Seu plano voltou para o Free — MedCase',
           html: `<h1>Olá, ${data.first_name},</h1>
 <p>Seu plano foi revertido para o Free.</p>
 <p>Você ainda tem acesso ao seu histórico completo.</p>
@@ -75,14 +75,14 @@ export class NotificationEmailService {
         }
       case 'streak-reminder':
         return {
-          subject: `Seu streak de ${data.streak_days} dias está em risco ⚡ — RevalidAI`,
+          subject: `Seu streak de ${data.streak_days} dias está em risco ⚡ — MedCase`,
           html: `<h1>Atenção, ${data.first_name}!</h1>
 <p>Você está com um streak de <strong>${data.streak_days} dias</strong> e ainda não estudou hoje.</p>
 <p>Faça uma sessão agora para manter seu streak!</p>`,
         }
       case 'case-rejected':
         return {
-          subject: 'Seu caso foi removido da biblioteca — RevalidAI',
+          subject: 'Seu caso foi removido da biblioteca — MedCase',
           html: `<h1>Olá, ${data.first_name},</h1>
 <p>O caso <strong>"${data.case_title}"</strong> foi removido da biblioteca pública.</p>
 <p>Motivo: ${data.rejection_reason}</p>`,

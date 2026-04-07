@@ -1,7 +1,7 @@
 jest.mock('src/config/env', () => ({
   env: {
     RESEND_API_KEY: 'test-resend-key',
-    RESEND_FROM_EMAIL: 'noreply@revalidai.com',
+    RESEND_FROM_EMAIL: 'noreply@medcase.com',
   },
 }))
 

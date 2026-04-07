@@ -19,8 +19,8 @@ const bootstrap = async () => {
 
   if (env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('RevalidAI API')
-      .setDescription('API da plataforma de simulação clínica interativa RevalidAI')
+      .setTitle('MedCase API')
+      .setDescription('API da plataforma de simulação clínica interativa MedCase')
       .setVersion('1.0')
       .addBearerAuth()
       .build()

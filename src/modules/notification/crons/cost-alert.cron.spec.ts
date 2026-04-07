@@ -1,4 +1,4 @@
-const mockAdminEmail = 'admin@revalidai.com'
+const mockAdminEmail = 'admin@medcase.com'
 
 jest.mock('../../../config/env', () => ({
   env: {

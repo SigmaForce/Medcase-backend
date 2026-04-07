@@ -30,8 +30,8 @@ const mockMercadoPagoAdapter = {
 
 const validBody = {
   plan: 'pro',
-  success_url: 'https://app.revalidai.com/success',
-  cancel_url: 'https://app.revalidai.com/cancel',
+  success_url: 'https://app.medcase.com/success',
+  cancel_url: 'https://app.medcase.com/cancel',
 }
 
 describe('CreateCheckout', () => {

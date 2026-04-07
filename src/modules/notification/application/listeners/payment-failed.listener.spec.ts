@@ -4,7 +4,7 @@ jest.mock('src/config/env', () => ({
     ADMIN_EMAIL: 'admin@test.com',
     POSTHOG_API_KEY: 'test',
     POSTHOG_HOST: 'https://app.posthog.com',
-    APP_URL: 'https://app.revalidai.com',
+    APP_URL: 'https://app.medcase.com',
   },
 }))
 
@@ -58,7 +58,7 @@ describe('PaymentFailedListener', () => {
         data: expect.objectContaining({
           first_name: 'João',
           retry_date: expect.any(String),
-          portal_url: 'https://app.revalidai.com/billing',
+          portal_url: 'https://app.medcase.com/billing',
         }),
       }),
     )

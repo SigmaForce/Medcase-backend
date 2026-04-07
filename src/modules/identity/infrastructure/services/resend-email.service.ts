@@ -17,7 +17,7 @@ export class ResendEmailService implements IEmailService {
     await this.resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: params.to,
-      subject: 'Confirme seu e-mail — Revalidai',
+      subject: 'Confirme seu e-mail — MedCase',
       html: `
         <h2>Olá, ${params.fullName}!</h2>
         <p>Clique no link abaixo para confirmar seu e-mail:</p>
@@ -33,7 +33,7 @@ export class ResendEmailService implements IEmailService {
     await this.resend.emails.send({
       from: env.RESEND_FROM_EMAIL,
       to: params.to,
-      subject: 'Redefinição de senha — Revalidai',
+      subject: 'Redefinição de senha — MedCase',
       html: `
         <h2>Olá, ${params.fullName}!</h2>
         <p>Clique no link abaixo para redefinir sua senha:</p>

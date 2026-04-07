@@ -28,7 +28,7 @@ export class MercadoPagoAdapter {
     const preApproval = new PreApproval(this.client)
     const result = await preApproval.create({
       body: {
-        reason: 'RevalidAI Pro — acesso ilimitado',
+        reason: 'MedCase Pro — acesso ilimitado',
         payer_email: params.userEmail,
         auto_recurring: {
           frequency: 1,

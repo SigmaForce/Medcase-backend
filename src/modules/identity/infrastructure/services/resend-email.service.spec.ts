@@ -11,7 +11,7 @@ jest.mock('resend', () => ({
 jest.mock('../../../../config/env', () => ({
   env: {
     RESEND_API_KEY: 're_test_key',
-    RESEND_FROM_EMAIL: 'noreply@revalidai.com',
+    RESEND_FROM_EMAIL: 'noreply@medcase.com',
     APP_URL: 'http://localhost:3000',
   },
 }))
@@ -37,9 +37,9 @@ describe('ResendEmailService', () => {
       expect(mockSend).toHaveBeenCalledTimes(1)
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'noreply@revalidai.com',
+          from: 'noreply@medcase.com',
           to: 'student@example.com',
-          subject: 'Confirme seu e-mail — Revalidai',
+          subject: 'Confirme seu e-mail — MedCase',
         }),
       )
     })
@@ -84,9 +84,9 @@ describe('ResendEmailService', () => {
       expect(mockSend).toHaveBeenCalledTimes(1)
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: 'noreply@revalidai.com',
+          from: 'noreply@medcase.com',
           to: 'student@example.com',
-          subject: 'Redefinição de senha — Revalidai',
+          subject: 'Redefinição de senha — MedCase',
         }),
       )
     })

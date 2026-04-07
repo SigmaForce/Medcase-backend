@@ -9,7 +9,7 @@ jest.mock('resend', () => ({
 jest.mock('../../../../config/env', () => ({
   env: {
     RESEND_API_KEY: 'test-resend-key',
-    RESEND_FROM_EMAIL: 'noreply@revalidai.com',
+    RESEND_FROM_EMAIL: 'noreply@medcase.com',
   },
 }))
 
@@ -33,8 +33,8 @@ describe('NotificationEmailService', () => {
     expect(mockEmailsSend).toHaveBeenCalledTimes(1)
     const call = mockEmailsSend.mock.calls[0][0] as { to: string; subject: string; from: string }
     expect(call.to).toBe('student@test.com')
-    expect(call.subject).toContain('RevalidAI')
-    expect(call.from).toBe('noreply@revalidai.com')
+    expect(call.subject).toContain('MedCase')
+    expect(call.from).toBe('noreply@medcase.com')
   })
 
   it('should call resend.emails.send with correct to and subject for template "upgrade-confirmed"', async () => {
@@ -78,14 +78,14 @@ describe('NotificationEmailService', () => {
 
   it('should call resend.emails.send with correct to and subject for template "cost-alert"', async () => {
     await service.send({
-      to: 'admin@revalidai.com',
+      to: 'admin@medcase.com',
       template: 'cost-alert',
       data: { cost_per_session: '0.150', total_usd: '15.00' },
     })
 
     expect(mockEmailsSend).toHaveBeenCalledTimes(1)
     const call = mockEmailsSend.mock.calls[0][0] as { to: string; subject: string }
-    expect(call.to).toBe('admin@revalidai.com')
+    expect(call.to).toBe('admin@medcase.com')
     expect(call.subject.toLowerCase()).toContain('custo')
   })
 })
