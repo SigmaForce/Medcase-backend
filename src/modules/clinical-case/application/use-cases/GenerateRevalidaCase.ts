@@ -125,6 +125,7 @@ export class GenerateRevalidaCase {
       caseBrief: {
         ...caseBriefRest,
         opening_message: generatedData.opening_message,
+        station_instructions: generatedData.station_instructions,
         patient_profile: generatedData.patient_profile,
         case_mode: 'revalida',
       },

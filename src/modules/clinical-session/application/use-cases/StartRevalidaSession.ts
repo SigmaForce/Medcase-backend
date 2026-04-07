@@ -23,6 +23,7 @@ export interface StartRevalidaSessionOutput {
     is_timed: boolean
     timed_limit_secs: number
     started_at: Date
+    station_instructions: string
     messages: Array<{
       id: string
       role: string
@@ -90,6 +91,7 @@ export class StartRevalidaSession {
     const createdSession = await this.sessionRepo.create(session)
 
     const openingMessage = (brief.opening_message as string | undefined) ?? 'Olá, pode me ajudar?'
+    const stationInstructions = (brief.station_instructions as string | undefined) ?? ''
 
     const firstMessage = MessageTurn.create({
       sessionId: createdSession.id,
@@ -111,6 +113,7 @@ export class StartRevalidaSession {
         is_timed: createdSession.isTimed,
         timed_limit_secs: createdSession.timedLimitSecs,
         started_at: createdSession.startedAt,
+        station_instructions: stationInstructions,
         messages: [
           {
             id: savedMessage.id,

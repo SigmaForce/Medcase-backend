@@ -32,4 +32,5 @@ export interface IReviewQueueRepository {
   findByCaseId(caseId: string): Promise<ReviewQueueItem | null>
   list(filters: ListQueueFilters): Promise<ListQueueResult>
   update(item: ReviewQueueItem): Promise<ReviewQueueItem>
+  count(status?: string): Promise<number>
 }

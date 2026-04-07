@@ -80,6 +80,12 @@ export class PrismaReviewQueueRepository implements IReviewQueueRepository {
     return { data, meta: { page: filters.page, limit: filters.limit, total } }
   }
 
+  async count(status?: string): Promise<number> {
+    return this.prisma.caseReviewQueue.count({
+      where: status ? { status } : undefined,
+    })
+  }
+
   async update(item: ReviewQueueItem): Promise<ReviewQueueItem> {
     const record = await this.prisma.caseReviewQueue.update({
       where: { id: item.id },

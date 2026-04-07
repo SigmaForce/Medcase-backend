@@ -57,6 +57,7 @@ export interface RevalidaCaseBrief {
     specialty_area: string
     duration_secs: number
   }
+  station_instructions: string
 }
 
 export interface RevalidaPatientProfile {
@@ -70,6 +71,7 @@ export interface RevalidaPatientProfile {
 export interface GeneratedRevalidaCaseData {
   title: string
   opening_message: string
+  station_instructions: string
   case_brief: RevalidaCaseBrief
   patient_profile: RevalidaPatientProfile
 }
@@ -127,6 +129,7 @@ REGRAS DO CASO:
 - O patient_script deve ter respostas em linguagem LEIGA, não médica
 - O campo duration do patient_script DEVE ser um número concreto (ex: "7 dias", "2 semanas", "3 meses") — NUNCA use expressões vagas como "há alguns dias" ou "faz algum tempo"
 - Os impressos são entregues condicionalmente pelo sistema quando o participante solicita/verbaliza corretamente
+- station_instructions: texto curto no estilo do envelope oficial do Revalida (2ª pessoa), 2-4 frases, descrevendo o cenário (tipo de serviço), dados básicos do paciente SEM revelar diagnóstico, e as tarefas que o candidato deve completar nos 10 minutos
 
 DOMÍNIOS DO PEP (obrigatório ter itens em todos):
 1. apresentacao — identificação e cumprimento
@@ -151,6 +154,7 @@ Retorne o JSON no seguinte formato:
 {
   "title": "Título descritivo sem revelar diagnóstico",
   "opening_message": "Primeira fala do paciente — queixa principal em 1ª pessoa, linguagem leiga",
+  "station_instructions": "Você está em [tipo de serviço — ex.: Unidade Básica de Saúde, Pronto-Socorro, Ambulatório de especialidade]. Irá atender [sexo e idade do paciente] que consulta por [queixa principal sem revelar diagnóstico]. Em 10 minutos você deve: realizar a anamnese, solicitar os exames que julgar necessários, estabelecer o diagnóstico provável e propor o tratamento adequado.",
   "case_brief": {
     "diagnosis": "Diagnóstico principal completo",
     "differential": ["Diagnóstico diferencial 1", "Diagnóstico diferencial 2"],
@@ -421,6 +425,10 @@ Seed de variação: ${Math.random().toString(36).substring(2, 10)}`
 
     if (typeof data.opening_message !== 'string' || data.opening_message.trim() === '') {
       throw new Error('Missing required field: opening_message')
+    }
+
+    if (typeof data.station_instructions !== 'string' || data.station_instructions.trim() === '') {
+      throw new Error('Missing required field: station_instructions')
     }
 
     if (typeof data.case_brief !== 'object' || data.case_brief === null) {

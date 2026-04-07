@@ -11,6 +11,7 @@ import { PrismaReviewQueueRepository } from './infrastructure/repositories/prism
 import { SubmitRating } from './application/use-cases/SubmitRating'
 import { GetMyRating } from './application/use-cases/GetMyRating'
 import { ListReviewQueue } from './application/use-cases/ListReviewQueue'
+import { GetReviewQueueCount } from './application/use-cases/GetReviewQueueCount'
 import { ApproveQueueItem } from './application/use-cases/ApproveQueueItem'
 import { RejectQueueItem } from './application/use-cases/RejectQueueItem'
 import { RegenerateQueueItem } from './application/use-cases/RegenerateQueueItem'
@@ -27,6 +28,7 @@ import { ReviewQueueController } from './presentation/controllers/review-queue.c
     SubmitRating,
     GetMyRating,
     ListReviewQueue,
+    GetReviewQueueCount,
     ApproveQueueItem,
     RejectQueueItem,
     RegenerateQueueItem,

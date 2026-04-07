@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.pipe'
 import { ListReviewQueue } from '../../application/use-cases/ListReviewQueue'
+import { GetReviewQueueCount } from '../../application/use-cases/GetReviewQueueCount'
 import { ApproveQueueItem } from '../../application/use-cases/ApproveQueueItem'
 import { RejectQueueItem } from '../../application/use-cases/RejectQueueItem'
 import { RegenerateQueueItem } from '../../application/use-cases/RegenerateQueueItem'
@@ -16,10 +17,17 @@ import { AdminGuard } from '../../../../infra/http/guards/admin.guard'
 export class ReviewQueueController {
   constructor(
     private readonly listReviewQueue: ListReviewQueue,
+    private readonly getReviewQueueCount: GetReviewQueueCount,
     private readonly approveQueueItem: ApproveQueueItem,
     private readonly rejectQueueItem: RejectQueueItem,
     private readonly regenerateQueueItem: RegenerateQueueItem,
   ) {}
+
+  @Get('count')
+  @HttpCode(HttpStatus.OK)
+  async count(@Query('status') status: string | undefined, @CurrentUser() user: JwtPayload) {
+    return this.getReviewQueueCount.execute({ role: user.role, status })
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)

@@ -12,6 +12,9 @@ const makeProSubscription = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 })
 
+const STATION_INSTRUCTIONS =
+  'Você está em uma Unidade Básica de Saúde. Irá atender um homem de 65 anos que consulta por dificuldade respiratória. Em 10 minutos você deve: realizar a anamnese, solicitar os exames que julgar necessários, estabelecer o diagnóstico provável e propor o tratamento adequado.'
+
 const makeRevalidaCase = (overrides: Record<string, unknown> = {}) => ({
   id: CASE_ID,
   status: 'approved',
@@ -23,6 +26,7 @@ const makeRevalidaCase = (overrides: Record<string, unknown> = {}) => ({
     },
     pep: [{ step: 'Anamnese', points: 10 }],
     opening_message: 'Olá, pode me ajudar?',
+    station_instructions: STATION_INSTRUCTIONS,
   },
   availableExams: { laboratory: [], imaging: [], ecg: [], other: [] },
   ...overrides,
@@ -95,6 +99,7 @@ describe('StartRevalidaSession', () => {
     expect(result.session.session_type).toBe('revalida')
     expect(result.session.is_timed).toBe(true)
     expect(result.session.timed_limit_secs).toBe(600)
+    expect(result.session.station_instructions).toBe(STATION_INSTRUCTIONS)
     expect(result.session.messages).toHaveLength(1)
     expect(result.session.messages[0].content).toBe('Olá, pode me ajudar?')
     expect(result.subscription.cases_used).toBe(6)
@@ -230,6 +235,27 @@ describe('StartRevalidaSession', () => {
       code: 'CASE_ALREADY_IN_PROGRESS',
       statusCode: 403,
     })
+  })
+
+  it('returns empty station_instructions when field is absent in caseBrief', async () => {
+    const caseWithoutInstructions = makeRevalidaCase({
+      caseBrief: {
+        patient_script: { chief_complaint: {}, associated_symptoms: {}, history: {} },
+        pep: [{ step: 'Anamnese', points: 10 }],
+        opening_message: 'Olá, pode me ajudar?',
+        // station_instructions absent
+      },
+    })
+    mockRepo.getSubscription.mockResolvedValue(makeProSubscription())
+    mockRepo.findCaseById.mockResolvedValue(caseWithoutInstructions)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
+    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.create.mockResolvedValue(makeSession())
+    mockRepo.addMessage.mockResolvedValue(makeMessage())
+
+    const result = await useCase.execute({ userId: USER_ID, caseId: CASE_ID })
+
+    expect(result.session.station_instructions).toBe('')
   })
 
   it('throws for invalid case_id UUID', async () => {
