@@ -91,6 +91,7 @@ REGRAS DO CASO:
 - O contexto "${input.countryContext}" define o sistema de saúde (BR=SUS, PY=IPS/privado)
 - O idioma de todo o conteúdo deve ser "${input.language}" (pt=português, es=espanhol)
 - O diagnóstico real NUNCA deve aparecer na apresentação do paciente
+- O campo context do patient_profile DEVE mencionar a duração dos sintomas com um número concreto (ex: "há 7 dias com febre", "tosse há 2 semanas") — NUNCA use expressões vagas como "há alguns dias" ou "faz algum tempo"
 - Os exames devem ter resultados coerentes com o diagnóstico real
 - Marque como is_key=true os exames essenciais para o diagnóstico
 - O campo "result" de cada exame deve ser um laudo clínico detalhado com:

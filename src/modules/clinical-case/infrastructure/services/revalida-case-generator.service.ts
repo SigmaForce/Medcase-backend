@@ -125,6 +125,7 @@ REGRAS DO CASO:
 - Idioma: "${input.language}"
 - O diagnóstico NUNCA aparece na apresentação do paciente nem nas respostas do roteiro
 - O patient_script deve ter respostas em linguagem LEIGA, não médica
+- O campo duration do patient_script DEVE ser um número concreto (ex: "7 dias", "2 semanas", "3 meses") — NUNCA use expressões vagas como "há alguns dias" ou "faz algum tempo"
 - Os impressos são entregues condicionalmente pelo sistema quando o participante solicita/verbaliza corretamente
 
 DOMÍNIOS DO PEP (obrigatório ter itens em todos):
@@ -164,7 +165,7 @@ Retorne o JSON no seguinte formato:
     "patient_script": {
       "chief_complaint": {
         "onset": "Resposta leiga sobre início da queixa",
-        "duration": "Há quanto tempo tem o problema",
+        "duration": "Há quanto tempo tem o problema — use SEMPRE um número concreto, ex: '7 dias', '2 semanas', '3 meses'",
         "frequency": "Com que frequência ocorre",
         "intensity": "Como descreveria a intensidade (use escala 0-10 se dor)",
         "radiation": "Se irradia ou não, para onde",
