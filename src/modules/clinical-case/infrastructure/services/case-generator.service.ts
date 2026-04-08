@@ -51,6 +51,24 @@ export interface GeneratedCaseData {
 
 const MAX_RETRIES = 3
 
+const randomSex = (): string => (Math.random() < 0.5 ? 'M' : 'F')
+
+const randomAge = (): number => {
+  const ranges = [
+    { min: 18, max: 35, weight: 2 },
+    { min: 36, max: 55, weight: 3 },
+    { min: 56, max: 75, weight: 3 },
+    { min: 76, max: 85, weight: 2 },
+  ]
+  const total = ranges.reduce((sum, r) => sum + r.weight, 0)
+  let rand = Math.random() * total
+  for (const range of ranges) {
+    rand -= range.weight
+    if (rand <= 0) return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min
+  }
+  return 45
+}
+
 @Injectable()
 export class CaseGeneratorService {
   constructor(private readonly openAi: OpenAiAdapter) {}
@@ -101,6 +119,8 @@ REGRAS DO CASO:
   * Para ECG: ritmo, frequência, eixo, alterações de segmento/onda descritas objetivamente
   * NUNCA inclua conclusão diagnóstica, hipótese ou impressão que revele o diagnóstico — apenas achados objetivos
   * NUNCA use resultados vagos como "alterado" ou "dentro do esperado" sem valores
+- Para exames laboratoriais especificamente: liste APENAS valores numéricos brutos com unidade e valor de referência por parâmetro, separados por ponto. NUNCA use termos interpretativos como "desvio à esquerda", "leucocitose", "anemia normocítica", "trombocitose", "pancitopenia" — apenas os números brutos. O estudante deve inferir a interpretação clínica.
+- SEMPRE inclua "sinais_vitais" no array other de available_exams com formato: "PA: XXX/XX mmHg. FC: XX bpm. FR: XX irpm. Tax: XX,X°C. SpO₂: XX% em ar ambiente."
 
 DIVERSIDADE OBRIGATÓRIA:
 - Varie as profissões dos pacientes — exemplos: professor, engenheiro, aposentado, pedreiro, costureira, estudante, cozinheiro, faxineiro, vendedor ambulante, pescador, enfermeira, mecânico, cabeleireira, segurança, auxiliar administrativo, agricultor, comerciante, zelador, motorista de ônibus, auxiliar de enfermagem, garçom, eletricista, contador
@@ -127,16 +147,16 @@ Retorne o JSON no seguinte formato:
   },
   "patient_profile": {
     "name": "Nome fictício compatível com o país",
-    "age": 35,
-    "sex": "M",
+    "age": ${randomAge()},
+    "sex": "${randomSex()}",
     "occupation": "Profissão",
     "context": "Contexto social relevante"
   },
   "available_exams": {
-    "laboratory": [{ "slug": "hemograma", "name": "Hemograma completo", "result": "Leucócitos: 14.200/mm³ (VR: 4.000–11.000) com neutrófilos 82% e desvio à esquerda (bastões 12%). Hemoglobina: 11,2 g/dL (VR: 12–16). Hematócrito: 34% (VR: 36–46%). Plaquetas: 420.000/mm³ (VR: 150.000–400.000).", "is_key": true, "category": "laboratory" }],
+    "laboratory": [{ "slug": "hemograma", "name": "Hemograma completo", "result": "Leucócitos: 14.200/mm³ (VR: 4.000–11.000). Neutrófilos: 82% (VR: 50–70%). Linfócitos: 12% (VR: 20–40%). Bastões: 12% (VR: 0–5%). Hemoglobina: 11,2 g/dL (VR: 12–16). Hematócrito: 34% (VR: 36–46%). VCM: 85 fL (VR: 80–100). Plaquetas: 420.000/mm³ (VR: 150.000–400.000).", "is_key": true, "category": "laboratory" }],
     "imaging": [{ "slug": "rx_torax", "name": "Radiografia de tórax PA", "result": "Opacidade heterogênea no lobo superior direito com broncograma aéreo visível. Seios costofrênicos livres. Área cardíaca com ICT 0,48. Traqueia centrada.", "is_key": true, "category": "imaging" }],
     "ecg": [],
-    "other": []
+    "other": [{ "slug": "sinais_vitais", "name": "Sinais vitais", "result": "PA: 130/85 mmHg. FC: 102 bpm. FR: 22 irpm. Tax: 38,5°C. SpO₂: 94% em ar ambiente.", "is_key": false, "category": "other" }]
   }
 }
 
@@ -235,6 +255,11 @@ Seed de variação: ${Math.random().toString(36).substring(2, 10)}`
     const uniqueSlugs = new Set(slugs)
     if (uniqueSlugs.size !== slugs.length) {
       throw new Error('Exam slugs must be unique within the case')
+    }
+
+    const hasVitalSigns = other.some((e) => e.slug === 'sinais_vitais')
+    if (!hasVitalSigns) {
+      throw new Error('available_exams.other must contain sinais_vitais')
     }
 
     return {

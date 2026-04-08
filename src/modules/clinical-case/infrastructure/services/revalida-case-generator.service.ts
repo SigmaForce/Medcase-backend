@@ -78,6 +78,24 @@ export interface GeneratedRevalidaCaseData {
 
 const MAX_RETRIES = 3
 
+const randomSex = (): string => (Math.random() < 0.5 ? 'M' : 'F')
+
+const randomAge = (): number => {
+  const ranges = [
+    { min: 18, max: 35, weight: 2 },
+    { min: 36, max: 55, weight: 3 },
+    { min: 56, max: 75, weight: 3 },
+    { min: 76, max: 85, weight: 2 },
+  ]
+  const total = ranges.reduce((sum, r) => sum + r.weight, 0)
+  let rand = Math.random() * total
+  for (const range of ranges) {
+    rand -= range.weight
+    if (rand <= 0) return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min
+  }
+  return 45
+}
+
 @Injectable()
 export class RevalidaCaseGeneratorService {
   constructor(private readonly openAi: OpenAiAdapter) {}
@@ -137,6 +155,13 @@ DOMÍNIOS DO PEP (obrigatório ter itens em todos):
 3. exame_fisico — técnicas de exame com verbalização (se aplicável à estação)
 4. investigacao — exames laboratoriais e de imagem pertinentes
 5. conduta — hipótese diagnóstica + tratamento + orientações + encaminhamento
+
+REGRAS PARA available_exams (resultados de exames):
+- Para exames laboratoriais: liste APENAS valores numéricos brutos com unidade e valor de referência por parâmetro, separados por ponto. NUNCA use termos interpretativos como "desvio à esquerda", "leucocitose", "anemia normocítica", "trombocitose", "pancitopenia" — apenas os números brutos. O estudante deve inferir a interpretação clínica.
+- Para exames de imagem: descrição radiológica objetiva (localização, tamanho, características morfológicas) sem nomear o diagnóstico.
+- Para ECG: medidas brutas de intervalo, ritmo e descrição de ondas — sem nomear arritmias ou síndromes.
+- NUNCA inclua conclusão diagnóstica, hipótese ou impressão que revele o diagnóstico em nenhum campo de resultado.
+- "sinais_vitais" deve SEMPRE estar presente no array other de available_exams.
 
 DIVERSIDADE OBRIGATÓRIA:
 - Varie as profissões dos pacientes — exemplos: professor, engenheiro, aposentado, pedreiro, costureira, estudante, cozinheiro, faxineiro, vendedor ambulante, pescador, enfermeira, mecânico, cabeleireira, segurança, auxiliar administrativo, agricultor, comerciante, zelador, motorista de ônibus, auxiliar de enfermagem, garçom, eletricista, contador
@@ -382,8 +407,8 @@ Retorne o JSON no seguinte formato:
   },
   "patient_profile": {
     "name": "Nome fictício compatível com o país",
-    "age": 35,
-    "sex": "M",
+    "age": ${randomAge()},
+    "sex": "${randomSex()}",
     "occupation": "Profissão compatível com o contexto",
     "context": "Contexto social relevante para o caso"
   }
@@ -463,6 +488,12 @@ Seed de variação: ${Math.random().toString(36).substring(2, 10)}`
       (Array.isArray(exams.other) && exams.other.length > 0)
     if (!hasExams) {
       throw new Error('case_brief.available_exams must have at least 1 exam item')
+    }
+
+    const otherExams = Array.isArray(exams.other) ? (exams.other as Array<Record<string, unknown>>) : []
+    const hasVitalSigns = otherExams.some((e) => e.slug === 'sinais_vitais')
+    if (!hasVitalSigns) {
+      throw new Error('case_brief.available_exams.other must contain sinais_vitais')
     }
 
     return data as unknown as GeneratedRevalidaCaseData
