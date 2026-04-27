@@ -1,4 +1,9 @@
-export const buildEmailHtml = (content: string): string =>
+interface BuildEmailHtmlParams {
+  content: string
+  hero: { label: string; title: string; subtitle: string }
+}
+
+export const buildEmailHtml = ({ content, hero }: BuildEmailHtmlParams): string =>
   `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -16,10 +21,13 @@ export const buildEmailHtml = (content: string): string =>
 
         <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #C8E6D8;">
 
-          <!-- Header -->
+          <!-- Hero Header -->
           <tr>
-            <td style="background-color:#08885D;padding:26px 40px;text-align:center;">
-              <span style="font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:-0.4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">MedCase</span>
+            <td style="background-color:#08885D;padding:36px 40px 40px;text-align:center;">
+              <p style="margin:0 0 20px;font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:-0.4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">MedCase</p>
+              <p style="margin:0 0 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.65);letter-spacing:2px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.label}</p>
+              <h1 style="margin:0 0 14px;font-size:30px;font-weight:700;color:#FFFFFF;line-height:1.2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.title}</h1>
+              <p style="margin:0 auto;font-size:15px;color:rgba(255,255,255,0.82);line-height:1.6;max-width:440px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.subtitle}</p>
             </td>
           </tr>
 
@@ -34,8 +42,8 @@ export const buildEmailHtml = (content: string): string =>
           <tr>
             <td style="background-color:#F6FAF8;border-top:1px solid #C8E6D8;padding:22px 40px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
               <p style="margin:0;font-size:12px;color:#587A6F;line-height:1.8;">
-                © ${new Date().getFullYear()} MedCase · Todos os direitos reservados<br>
-                Dúvidas? <a href="mailto:suporte@medcase.com" style="color:#08885D;text-decoration:underline;">suporte@medcase.com</a>
+                &copy; ${new Date().getFullYear()} MedCase &middot; Todos os direitos reservados<br>
+                D&uacute;vidas? <a href="mailto:suporte@medcase.com" style="color:#08885D;text-decoration:underline;">suporte@medcase.com</a>
               </p>
             </td>
           </tr>

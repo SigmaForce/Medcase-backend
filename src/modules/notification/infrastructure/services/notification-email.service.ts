@@ -21,10 +21,9 @@ export interface SendNotificationParams {
 
 const BTN =
   "display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
-const BTN_GREEN = `${BTN}background-color:#08885D;color:#F0FDF9;`
+const BTN_DARK = `${BTN}background-color:#1A2B25;color:#FFFFFF;`
 const BTN_RED = `${BTN}background-color:#DC2626;color:#FFFFFF;`
 
-const H1 = 'margin:0 0 8px;font-size:24px;font-weight:700;color:#1A2B25;line-height:1.3;'
 const P = 'margin:0 0 16px;font-size:15px;color:#1A2B25;line-height:1.7;'
 const PMUTED = 'margin:0 0 16px;font-size:13px;color:#587A6F;line-height:1.7;'
 const BOX_AMBER =
@@ -33,7 +32,8 @@ const BOX_GREEN =
   'background-color:#EDF7F2;border-left:4px solid #08885D;border-radius:0 6px 6px 0;padding:14px 18px;'
 const BOX_RED =
   'background-color:#FEF2F2;border-left:4px solid #DC2626;border-radius:0 6px 6px 0;padding:14px 18px;'
-const BOX_P = 'margin:0;font-size:14px;color:#1A2B25;line-height:1.6;'
+const BOX_P = 'margin:0;font-size:14px;color:#1A2B25;line-height:1.8;'
+const CHECK = 'color:#08885D;font-weight:600;margin-right:8px;'
 
 @Injectable()
 export class NotificationEmailService {
@@ -56,159 +56,191 @@ export class NotificationEmailService {
     switch (template) {
       case 'welcome': {
         const content = `
-          <h1 style="${H1}">Sua conta está pronta, ${data.first_name}!</h1>
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
           <p style="${P}">
-            Estamos felizes em ter você no MedCase. Sua conta foi ativada com sucesso
-            e você já pode começar a praticar casos clínicos com IA.
+            Estamos felizes em ter voc&ecirc; no MedCase. Sua conta foi ativada com sucesso
+            e voc&ecirc; j&aacute; pode come&ccedil;ar a praticar casos cl&iacute;nicos com IA.
           </p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_GREEN}">
-              <p style="${BOX_P}">🎯 Você tem <strong>${data.cases_limit} casos gratuitos</strong> disponíveis por mês. Seus casos renovam automaticamente todo mês.</p>
+              <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Voc&ecirc; tem <strong>${data.cases_limit} casos gratuitos</strong> por m&ecirc;s. Inclui:</p>
+              <p style="${BOX_P}">
+                <span style="${CHECK}">&check;</span>Casos cl&iacute;nicos reais e atualizados<br>
+                <span style="${CHECK}">&check;</span>Simula&ccedil;&otilde;es para Revalida<br>
+                <span style="${CHECK}">&check;</span>Feedback detalhado do seu racioc&iacute;nio<br>
+                <span style="${CHECK}">&check;</span>Renova&ccedil;&atilde;o autom&aacute;tica todo m&ecirc;s
+              </p>
             </td></tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
-              <td style="background-color:#08885D;border-radius:8px;">
-                <a href="${env.APP_URL}" style="${BTN_GREEN}">Começar agora</a>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${env.APP_URL}" style="${BTN_DARK}">Come&ccedil;ar agora &rarr;</a>
               </td>
             </tr>
           </table>
 
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-            Bons estudos! Qualquer dúvida, estamos aqui.
+            Bons estudos! Qualquer d&uacute;vida, estamos aqui.
           </p>
         `
         return {
           subject: 'Sua conta está pronta — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'BEM-VINDO À MEDCASE',
+              title: 'Sua conta está pronta!',
+              subtitle: 'Você já pode começar a praticar casos clínicos com IA.',
+            },
+          }),
         }
       }
 
       case 'limit-reached': {
         const content = `
-          <h1 style="${H1}">Limite de casos atingido</h1>
-          <p style="${P}">Olá, ${data.first_name}!</p>
-          <p style="${P}">Você utilizou todos os seus casos gratuitos deste mês. Continue praticando
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">Voc&ecirc; utilizou todos os seus casos gratuitos deste m&ecirc;s. Continue praticando
             fazendo upgrade para o plano Pro.</p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_AMBER}">
-              <p style="${BOX_P}">📅 Seu limite gratuito será renovado em <strong>${data.reset_date}</strong>.</p>
+              <p style="${BOX_P}">Seu limite gratuito ser&aacute; renovado em <strong>${data.reset_date}</strong>.</p>
             </td></tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
-              <td style="background-color:#08885D;border-radius:8px;">
-                <a href="${env.APP_URL}" style="${BTN_GREEN}">Conhecer o plano Pro</a>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${env.APP_URL}" style="${BTN_DARK}">Conhecer o plano Pro &rarr;</a>
               </td>
             </tr>
           </table>
 
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-            Com o Pro você tem acesso ilimitado a todos os casos clínicos.
+            Com o Pro voc&ecirc; tem acesso ilimitado a todos os casos cl&iacute;nicos.
           </p>
         `
         return {
-          subject: 'Você usou seus 5 casos deste mês — MedCase',
-          html: buildEmailHtml(content),
+          subject: 'Você usou seus casos deste mês — MedCase',
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'LIMITE MENSAL',
+              title: 'Limite de casos atingido',
+              subtitle: 'Você utilizou todos os seus casos gratuitos deste mês.',
+            },
+          }),
         }
       }
 
       case 'upgrade-confirmed': {
         const content = `
-          <h1 style="${H1}">Assinatura PRO ativada</h1>
-          <p style="${P}">Parabéns, ${data.first_name}! Seu plano Pro está ativo. Agora você tem acesso
-            ilimitado a todos os casos clínicos.</p>
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">Seu plano Pro est&aacute; ativo. Agora voc&ecirc; tem acesso
+            ilimitado a todos os casos cl&iacute;nicos.</p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_GREEN}">
-              <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Seu plano inclui:</p>
+              <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Seu plano inclui:</p>
               <p style="${BOX_P}">
-                ✅ Acesso ilimitado a casos clínicos<br>
-                📅 Próxima cobrança: <strong>${data.next_billing_date}</strong><br>
-                💳 Valor: <strong>${data.price}</strong><br>
-                🔄 Renovação automática mensal
+                <span style="${CHECK}">&check;</span>Acesso ilimitado a casos cl&iacute;nicos<br>
+                <span style="${CHECK}">&check;</span>Pr&oacute;xima cobran&ccedil;a: <strong>${data.next_billing_date}</strong><br>
+                <span style="${CHECK}">&check;</span>Valor: <strong>${data.price}</strong><br>
+                <span style="${CHECK}">&check;</span>Renova&ccedil;&atilde;o autom&aacute;tica mensal
               </p>
             </td></tr>
           </table>
 
-          <p style="${P}">Sua jornada de treinamento clínico com IA começa agora. Bons estudos!</p>
+          <p style="${P}">Sua jornada de treinamento cl&iacute;nico com IA come&ccedil;a agora. Bons estudos!</p>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
-              <td style="background-color:#08885D;border-radius:8px;">
-                <a href="${env.APP_URL}" style="${BTN_GREEN}">Começar a estudar</a>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${env.APP_URL}" style="${BTN_DARK}">Come&ccedil;ar a estudar &rarr;</a>
               </td>
             </tr>
           </table>
 
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-            Para gerenciar ou cancelar sua assinatura, acesse as configurações da sua conta.
+            Para gerenciar ou cancelar sua assinatura, acesse as configura&ccedil;&otilde;es da sua conta.
           </p>
         `
         return {
           subject: 'Bem-vindo ao Pro! — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'PLANO PRO',
+              title: 'Assinatura PRO ativada',
+              subtitle: 'Parabéns! Você agora tem acesso ilimitado a todos os casos clínicos.',
+            },
+          }),
         }
       }
 
       case 'payment-failed': {
         const content = `
-          <h1 style="${H1}">Problema no pagamento</h1>
-          <p style="${P}">Olá, ${data.first_name}, não conseguimos processar seu pagamento.
-            Isso pode acontecer por alguns motivos:</p>
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">N&atilde;o conseguimos processar seu pagamento. Isso pode acontecer pelos seguintes motivos:</p>
 
           <p style="margin:0 0 20px;font-size:14px;color:#1A2B25;line-height:1.9;padding-left:4px;">
-            &bull; Cartão expirado ou dados desatualizados<br>
+            &bull; Cart&atilde;o expirado ou dados desatualizados<br>
             &bull; Saldo ou limite insuficiente<br>
             &bull; Bloqueio preventivo do banco
           </p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_RED}">
-              <p style="${BOX_P}">⚠️ Seu acesso ao plano Pro pode ser suspenso em breve. Atualize sua forma de pagamento para continuar.</p>
+              <p style="${BOX_P}">Seu acesso ao plano Pro pode ser suspenso em breve. Atualize sua forma de pagamento para continuar.</p>
             </td></tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
               <td style="background-color:#DC2626;border-radius:8px;">
-                <a href="${data.portal_url}" style="${BTN_RED}">Atualizar pagamento</a>
+                <a href="${data.portal_url}" style="${BTN_RED}">Atualizar pagamento &rarr;</a>
               </td>
             </tr>
           </table>
 
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-            Após atualizar, tentaremos processar novamente automaticamente em <strong>${data.retry_date}</strong>.
+            Ap&oacute;s atualizar, tentaremos processar novamente automaticamente em <strong>${data.retry_date}</strong>.
           </p>
         `
         return {
           subject: 'Problema com seu pagamento — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'ATENÇÃO',
+              title: 'Problema no pagamento',
+              subtitle: 'Não conseguimos processar seu pagamento recente.',
+            },
+          }),
         }
       }
 
       case 'downgraded': {
         const content = `
-          <h1 style="${H1}">Sua assinatura foi cancelada</h1>
-          <p style="${P}">Olá, ${data.first_name}, confirmamos o cancelamento da sua assinatura Pro.
-            Você retornou ao plano gratuito.</p>
-          <p style="${P}">Você ainda tem acesso ao seu histórico completo de casos e pode continuar
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">Confirmamos o cancelamento da sua assinatura Pro.
+            Voc&ecirc; retornou ao plano gratuito.</p>
+          <p style="${P}">Voc&ecirc; ainda tem acesso ao seu hist&oacute;rico completo de casos e pode continuar
             utilizando os casos gratuitos mensais.</p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_GREEN}">
-              <p style="${BOX_P}">💡 Quer continuar praticando sem limites? Você pode reativar sua assinatura a qualquer momento.</p>
+              <p style="${BOX_P}">Quer continuar praticando sem limites? Voc&ecirc; pode reativar sua assinatura a qualquer momento.</p>
             </td></tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
-              <td style="background-color:#08885D;border-radius:8px;">
-                <a href="${env.APP_URL}" style="${BTN_GREEN}">Reativar assinatura</a>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${env.APP_URL}" style="${BTN_DARK}">Reativar assinatura &rarr;</a>
               </td>
             </tr>
           </table>
@@ -216,12 +248,19 @@ export class NotificationEmailService {
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
             Tem algum feedback?
             <a href="mailto:suporte@medcase.com" style="color:#08885D;text-decoration:underline;">Conte para a gente</a>
-            — sua opinião nos ajuda a melhorar.
+            &mdash; sua opini&atilde;o nos ajuda a melhorar.
           </p>
         `
         return {
           subject: 'Seu plano voltou para o Free — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'ASSINATURA',
+              title: 'Assinatura cancelada',
+              subtitle: 'Seu plano Pro foi cancelado. Você retornou ao plano gratuito.',
+            },
+          }),
         }
       }
 
@@ -229,20 +268,20 @@ export class NotificationEmailService {
         const remaining = data.remaining_cases as number
         const plural = remaining !== 1
         const content = `
-          <h1 style="${H1}">Você ainda tem casos disponíveis</h1>
-          <p style="${P}">Olá, ${data.first_name}! Você ainda tem <strong>${remaining} caso${plural ? 's' : ''}</strong>
-            disponíve${plural ? 'is' : 'l'} este mês. Aproveite para praticar e evoluir no seu raciocínio clínico.</p>
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">Voc&ecirc; ainda tem <strong>${remaining} caso${plural ? 's' : ''}</strong>
+            dispon&iacute;ve${plural ? 'is' : 'l'} este m&ecirc;s. Aproveite para praticar e evoluir no seu racioc&iacute;nio cl&iacute;nico.</p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_GREEN}">
-              <p style="${BOX_P}">📅 Seus casos gratuitos <strong>renovam todo mês</strong>. Não deixe passar!</p>
+              <p style="${BOX_P}">Seus casos gratuitos <strong>renovam todo m&ecirc;s</strong>. N&atilde;o deixe passar!</p>
             </td></tr>
           </table>
 
           <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
             <tr>
-              <td style="background-color:#08885D;border-radius:8px;">
-                <a href="${data.app_link}" style="${BTN_GREEN}">Resolver um caso agora</a>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${data.app_link}" style="${BTN_DARK}">Resolver um caso agora &rarr;</a>
               </td>
             </tr>
           </table>
@@ -253,15 +292,21 @@ export class NotificationEmailService {
         `
         return {
           subject: 'Você ainda tem casos disponíveis este mês — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'LEMBRETE',
+              title: 'Casos disponíveis este mês',
+              subtitle: 'Não deixe seus casos gratuitos passarem sem uso.',
+            },
+          }),
         }
       }
 
       case 'case-rejected': {
         const content = `
-          <h1 style="${H1}">Caso removido da biblioteca</h1>
-          <p style="${P}">Olá, ${data.first_name},</p>
-          <p style="${P}">O caso <strong>"${data.case_title}"</strong> foi removido da biblioteca pública após revisão.</p>
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name},</p>
+          <p style="${P}">O caso <strong>&ldquo;${data.case_title}&rdquo;</strong> foi removido da biblioteca p&uacute;blica ap&oacute;s revis&atilde;o.</p>
 
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
             <tr><td style="${BOX_AMBER}">
@@ -270,32 +315,45 @@ export class NotificationEmailService {
           </table>
 
           <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-            Você pode editar o caso e submetê-lo novamente para revisão.
+            Voc&ecirc; pode editar o caso e submet&ecirc;-lo novamente para revis&atilde;o.
           </p>
         `
         return {
           subject: 'Seu caso foi removido da biblioteca — MedCase',
-          html: buildEmailHtml(content),
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'CURADORIA',
+              title: 'Caso removido da biblioteca',
+              subtitle: 'O caso foi removido da biblioteca após revisão editorial.',
+            },
+          }),
         }
       }
 
       case 'cost-alert':
         return {
-          subject: `⚠️ Custo GPT acima da meta — $${data.cost_per_session}/sessão`,
-          html: buildEmailHtml(`
-            <h1 style="${H1}">Alerta de custo</h1>
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;">
-              <tr><td style="${BOX_RED}">
-                <p style="${BOX_P}">
-                  Custo por sessão ontem: <strong>$${data.cost_per_session}</strong><br>
-                  Total gasto: <strong>$${data.total_usd}</strong>
-                </p>
-              </td></tr>
-            </table>
-            <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
-              Verifique o uso de tokens no painel de análise.
-            </p>
-          `),
+          subject: `Custo GPT acima da meta — $${data.cost_per_session}/sessão`,
+          html: buildEmailHtml({
+            content: `
+              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;">
+                <tr><td style="${BOX_RED}">
+                  <p style="${BOX_P}">
+                    Custo por sess&atilde;o ontem: <strong>$${data.cost_per_session}</strong><br>
+                    Total gasto: <strong>$${data.total_usd}</strong>
+                  </p>
+                </td></tr>
+              </table>
+              <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
+                Verifique o uso de tokens no painel de an&aacute;lise.
+              </p>
+            `,
+            hero: {
+              label: 'MONITORAMENTO',
+              title: 'Alerta de custo',
+              subtitle: 'Custo GPT acima da meta definida.',
+            },
+          }),
         }
     }
   }
