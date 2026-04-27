@@ -10,7 +10,13 @@ export interface SendPasswordResetParams {
   fullName: string
 }
 
+export interface SendPasswordChangedParams {
+  to: string
+  fullName: string
+}
+
 export interface IEmailService {
   sendEmailConfirmation(params: SendEmailConfirmationParams): Promise<void>
   sendPasswordReset(params: SendPasswordResetParams): Promise<void>
+  sendPasswordChanged(params: SendPasswordChangedParams): Promise<void>
 }

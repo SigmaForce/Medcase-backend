@@ -2,6 +2,7 @@ jest.mock('src/config/env', () => ({
   env: {
     RESEND_API_KEY: 'test-resend-key',
     RESEND_FROM_EMAIL: 'noreply@medcase.com',
+    APP_URL: 'https://app.medcase.com',
   },
 }))
 
@@ -31,8 +32,8 @@ describe('StreakReminderCron', () => {
 
   it('should send streak-reminder email to each at-risk user', async () => {
     const atRiskUsers = [
-      { email: 'user1@test.com', fullName: 'Alice Souza', currentStreak: 5 },
-      { email: 'user2@test.com', fullName: 'Bob Lima', currentStreak: 3 },
+      { email: 'user1@test.com', fullName: 'Alice Souza', remainingCases: 3 },
+      { email: 'user2@test.com', fullName: 'Bob Lima', remainingCases: 1 },
     ]
     mockStreakRepo.findAtRiskToday.mockResolvedValue(atRiskUsers)
     mockEmailService.send.mockResolvedValue(undefined)
@@ -44,14 +45,14 @@ describe('StreakReminderCron', () => {
       expect.objectContaining({
         to: 'user1@test.com',
         template: 'streak-reminder',
-        data: expect.objectContaining({ first_name: 'Alice', streak_days: 5 }),
+        data: expect.objectContaining({ first_name: 'Alice', remaining_cases: 3 }),
       }),
     )
     expect(mockEmailService.send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'user2@test.com',
         template: 'streak-reminder',
-        data: expect.objectContaining({ first_name: 'Bob', streak_days: 3 }),
+        data: expect.objectContaining({ first_name: 'Bob', remaining_cases: 1 }),
       }),
     )
   })

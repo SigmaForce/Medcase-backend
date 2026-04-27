@@ -10,6 +10,7 @@ const mockUserRepo = { findById: jest.fn(), update: jest.fn() }
 const mockPasswordResetRepo = { findByTokenHash: jest.fn(), markUsed: jest.fn() }
 const mockRefreshTokenRepo = { deleteAllByUserId: jest.fn() }
 const mockAuditLogRepo = { log: jest.fn() }
+const mockEmailService = { sendPasswordChanged: jest.fn() }
 
 const makeReset = (overrides: Partial<PasswordReset> = {}): PasswordReset => {
   const reset = PasswordReset.create('user-1', 'hash')
@@ -37,6 +38,7 @@ describe('ResetPassword', () => {
       mockPasswordResetRepo as any,
       mockRefreshTokenRepo as any,
       mockAuditLogRepo as any,
+      mockEmailService as any,
     )
   })
 
@@ -89,6 +91,7 @@ describe('ResetPassword', () => {
     mockPasswordResetRepo.markUsed.mockResolvedValue(undefined)
     mockRefreshTokenRepo.deleteAllByUserId.mockResolvedValue(undefined)
     mockAuditLogRepo.log.mockResolvedValue(undefined)
+    mockEmailService.sendPasswordChanged.mockResolvedValue(undefined)
 
     await useCase.execute('raw-token', 'NewPass@1Strong')
 
@@ -97,6 +100,9 @@ describe('ResetPassword', () => {
     expect(mockRefreshTokenRepo.deleteAllByUserId).toHaveBeenCalledWith('user-1')
     expect(mockAuditLogRepo.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'user.password_reset' }),
+    )
+    expect(mockEmailService.sendPasswordChanged).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'alice@example.com' }),
     )
   })
 })

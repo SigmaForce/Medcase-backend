@@ -2,7 +2,7 @@ import { UserStreak } from '../entities/user-streak.entity'
 
 export interface AtRiskUser {
   userId: string
-  currentStreak: number
+  remainingCases: number
   email: string
   fullName: string
 }

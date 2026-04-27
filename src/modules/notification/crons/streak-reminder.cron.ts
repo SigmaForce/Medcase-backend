@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
+import { env } from '../../../config/env'
 import { IUserStreakRepository } from '../../identity/domain/interfaces/user-streak-repository.interface'
 import { NotificationEmailService } from '../infrastructure/services/notification-email.service'
 
@@ -32,13 +33,14 @@ export class StreakReminderCron {
             template: 'streak-reminder',
             data: {
               first_name: user.fullName.split(' ')[0],
-              streak_days: user.currentStreak,
+              remaining_cases: user.remainingCases,
+              app_link: env.APP_URL,
             },
           })
           processed++
         } catch (err) {
           failed++
-          this.logger.error('Failed to send streak reminder', { userId: user.userId, error: err })
+          this.logger.error('Failed to send case reminder', { userId: user.userId, error: err })
         }
       }
 
@@ -46,6 +48,6 @@ export class StreakReminderCron {
       skip += BATCH_SIZE
     }
 
-    this.logger.log(`Streak reminders sent: ${processed}, failed: ${failed}`)
+    this.logger.log(`Case reminders sent: ${processed}, failed: ${failed}`)
   }
 }

@@ -10,6 +10,7 @@ jest.mock('../../../../config/env', () => ({
   env: {
     RESEND_API_KEY: 'test-resend-key',
     RESEND_FROM_EMAIL: 'noreply@medcase.com',
+    APP_URL: 'https://app.medcase.com',
   },
 }))
 
@@ -67,13 +68,13 @@ describe('NotificationEmailService', () => {
     await service.send({
       to: 'streak@test.com',
       template: 'streak-reminder',
-      data: { first_name: 'Ana', streak_days: 7 },
+      data: { first_name: 'Ana', remaining_cases: 4, app_link: 'https://app.medcase.com' },
     })
 
     expect(mockEmailsSend).toHaveBeenCalledTimes(1)
     const call = mockEmailsSend.mock.calls[0][0] as { to: string; subject: string }
     expect(call.to).toBe('streak@test.com')
-    expect(call.subject).toContain('streak')
+    expect(call.subject).toContain('casos disponíveis')
   })
 
   it('should call resend.emails.send with correct to and subject for template "cost-alert"', async () => {
