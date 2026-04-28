@@ -107,7 +107,7 @@ REGRAS DO CASO:
 - Deve ser clinicamente coerente e baseado em medicina baseada em evidências
 - A dificuldade "${input.difficulty}" define a complexidade do raciocínio exigido
 - O contexto "${input.countryContext}" define o sistema de saúde (BR=SUS, PY=IPS/privado)
-- O idioma de todo o conteúdo deve ser "${input.language}" (pt=português, es=espanhol)
+- IDIOMA OBRIGATÓRIO: "${input.language}" — TODOS os valores textuais do JSON (título, diagnóstico, conduta, nomes de exames, resultados, perfil do paciente) DEVEM estar em ${input.language === 'es' ? 'ESPANHOL. É PROIBIDO usar português em qualquer campo.' : 'PORTUGUÊS.'}
 - O diagnóstico real NUNCA deve aparecer na apresentação do paciente
 - O campo context do patient_profile DEVE mencionar a duração dos sintomas com um número concreto (ex: "há 7 dias com febre", "tosse há 2 semanas") — NUNCA use expressões vagas como "há alguns dias" ou "faz algum tempo"
 - Os exames devem ter resultados coerentes com o diagnóstico real
@@ -132,6 +132,8 @@ DIVERSIDADE OBRIGATÓRIA:
   private buildUserPrompt(input: GenerateInput): string {
     return `Gere um caso clínico de ${input.specialtyName} com dificuldade ${input.difficulty}.
 Contexto: sistema de saúde ${input.countryContext}, idioma ${input.language}.
+
+⚠️ IDIOMA: Os rótulos abaixo são apenas referência de estrutura. TODOS os valores reais do JSON devem estar em ${input.language === 'es' ? 'ESPANHOL (es). NÃO use português em nenhum campo — nem em nomes de exames, nem em resultados, nem no perfil do paciente.' : 'PORTUGUÊS (pt).'}
 
 Retorne o JSON no seguinte formato:
 

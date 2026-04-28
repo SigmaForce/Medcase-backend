@@ -27,6 +27,7 @@ export interface ClinicalCaseRecord {
   id: string
   status: string
   specialtyId: number
+  language: 'pt' | 'es'
   caseBrief: Record<string, unknown>
   availableExams: Record<string, unknown>
 }

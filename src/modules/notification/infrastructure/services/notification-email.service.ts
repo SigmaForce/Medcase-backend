@@ -8,6 +8,7 @@ export type EmailTemplate =
   | 'limit-reached'
   | 'upgrade-confirmed'
   | 'payment-failed'
+  | 'cancellation-scheduled'
   | 'downgraded'
   | 'streak-reminder'
   | 'case-rejected'
@@ -218,6 +219,42 @@ export class NotificationEmailService {
               label: 'ATENÇÃO',
               title: 'Problema no pagamento',
               subtitle: 'Não conseguimos processar seu pagamento recente.',
+            },
+          }),
+        }
+      }
+
+      case 'cancellation-scheduled': {
+        const content = `
+          <p style="${PMUTED}">Ol&aacute;, ${data.first_name}!</p>
+          <p style="${P}">Confirmamos o cancelamento da sua assinatura Pro. Voc&ecirc; ainda tem acesso completo a todos os recursos at&eacute; o fim do per&iacute;odo pago.</p>
+
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 24px;">
+            <tr><td style="${BOX_AMBER}">
+              <p style="${BOX_P}">Seu acesso Pro expira em <strong>${data.cancel_at}</strong>. At&eacute; l&aacute;, nada muda.</p>
+            </td></tr>
+          </table>
+
+          <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+            <tr>
+              <td style="background-color:#1A2B25;border-radius:8px;">
+                <a href="${env.APP_URL}" style="${BTN_DARK}">Gerenciar assinatura &rarr;</a>
+              </td>
+            </tr>
+          </table>
+
+          <p style="margin:0;font-size:13px;color:#587A6F;line-height:1.6;">
+            Mudou de ideia? Voc&ecirc; pode reativar sua assinatura a qualquer momento antes dessa data.
+          </p>
+        `
+        return {
+          subject: 'Cancelamento confirmado — MedCase',
+          html: buildEmailHtml({
+            content,
+            hero: {
+              label: 'ASSINATURA',
+              title: 'Cancelamento confirmado',
+              subtitle: 'Seu acesso Pro continua ativo até o fim do período pago.',
             },
           }),
         }

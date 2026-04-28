@@ -10,6 +10,7 @@ import { UsageLimitReachedListener } from './application/listeners/usage-limit-r
 import { SubscriptionUpgradedListener } from './application/listeners/subscription-upgraded.listener'
 import { PaymentFailedListener } from './application/listeners/payment-failed.listener'
 import { SubscriptionDowngradedListener } from './application/listeners/subscription-downgraded.listener'
+import { SubscriptionCancellationScheduledListener } from './application/listeners/subscription-cancellation-scheduled.listener'
 import { CaseRejectedListener } from './application/listeners/case-rejected.listener'
 
 import { StreakReminderCron } from './crons/streak-reminder.cron'
@@ -24,6 +25,7 @@ import { CostAlertCron } from './crons/cost-alert.cron'
     SubscriptionUpgradedListener,
     PaymentFailedListener,
     SubscriptionDowngradedListener,
+    SubscriptionCancellationScheduledListener,
     CaseRejectedListener,
     StreakReminderCron,
     CostAlertCron,

@@ -142,7 +142,7 @@ REGRAS DO CASO:
 - Área: "${input.specialtyArea}"
 - Dificuldade: "${input.difficulty}"
 - País/contexto: "${input.countryContext}" (BR=SUS, PY=IPS/privado)
-- Idioma: "${input.language}"
+- IDIOMA OBRIGATÓRIO: "${input.language}" — TODOS os valores textuais do JSON (título, diagnóstico, conduta, PEP, roteiro do paciente, instruções da estação, nomes e resultados de exames) DEVEM estar em ${input.language === 'es' ? 'ESPANHOL. É PROIBIDO usar português em qualquer campo.' : 'PORTUGUÊS.'}
 - O diagnóstico NUNCA aparece na apresentação do paciente nem nas respostas do roteiro
 - O patient_script deve ter respostas em linguagem LEIGA, não médica
 - O campo duration do patient_script DEVE ser um número concreto (ex: "7 dias", "2 semanas", "3 meses") — NUNCA use expressões vagas como "há alguns dias" ou "faz algum tempo"
@@ -173,6 +173,8 @@ DIVERSIDADE OBRIGATÓRIA:
   private buildUserPrompt(input: RevalidaGenerateInput): string {
     return `Gere uma estação de ${input.specialtyName} (${input.specialtyArea}) nível de atenção ${input.attentionLevel},
 dificuldade ${input.difficulty}, contexto ${input.countryContext}, idioma ${input.language}.
+
+⚠️ IDIOMA: Os rótulos abaixo são apenas referência de estrutura. TODOS os valores reais do JSON devem estar em ${input.language === 'es' ? 'ESPANHOL (es). NÃO use português em nenhum campo — nem em nomes/resultados de exames, nem no roteiro do paciente, nem no PEP, nem nas instruções da estação.' : 'PORTUGUÊS (pt).'}
 
 Retorne o JSON no seguinte formato:
 

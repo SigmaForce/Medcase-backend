@@ -6,6 +6,7 @@ import { IPaymentEventRepository } from '../../domain/interfaces/payment-event-r
 import { StripeAdapter } from '../../infrastructure/adapters/stripe.adapter'
 import { SubscriptionUpgradedEvent } from '../../domain/events/subscription-upgraded.event'
 import { SubscriptionDowngradedEvent } from '../../domain/events/subscription-downgraded.event'
+import { SubscriptionCancellationScheduledEvent } from '../../domain/events/subscription-cancellation-scheduled.event'
 import { PaymentFailedEvent } from '../../domain/events/payment-failed.event'
 
 export interface HandleStripeWebhookInput {
@@ -123,6 +124,20 @@ export class HandleStripeWebhook {
           await this.subscriptionRepo.downgrade(sub.userId)
           this.eventEmitter.emit('subscription.downgraded', new SubscriptionDowngradedEvent(sub.userId, 'stripe'))
           break
+        }
+
+        // Billing portal cancels via cancel_at (not cancel_at_period_end).
+        // Detect when cancel_at transitions null → future timestamp.
+        const prev = event.data.previous_attributes as Record<string, unknown> | undefined
+        const justScheduledCancellation =
+          stripeSub.cancel_at !== null && prev?.cancel_at === null
+
+        if (justScheduledCancellation) {
+          const cancelAt = new Date(stripeSub.cancel_at * 1000)
+          this.eventEmitter.emit(
+            'subscription.cancellation.scheduled',
+            new SubscriptionCancellationScheduledEvent(sub.userId, 'stripe', cancelAt),
+          )
         }
 
         const updated = await this.subscriptionRepo.findByUserId(sub.userId)

@@ -138,6 +138,7 @@ export class PrismaSessionRepository implements ISessionRepository {
       id: record.id,
       status: record.status,
       specialtyId: record.specialtyId,
+      language: record.language as 'pt' | 'es',
       caseBrief: record.caseBrief as Record<string, unknown>,
       availableExams: record.availableExams as Record<string, unknown>,
     }
