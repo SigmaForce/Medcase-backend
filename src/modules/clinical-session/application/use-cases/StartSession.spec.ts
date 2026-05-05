@@ -66,7 +66,7 @@ const mockRepo = {
   findCaseById: jest.fn(),
   findByUserAndCase: jest.fn(),
   findInProgressByUserAndCase: jest.fn(),
-  incrementCasesUsed: jest.fn(),
+  incrementCasesUsedIfAllowed: jest.fn(),
   create: jest.fn(),
   addMessage: jest.fn(),
   findById: jest.fn(),
@@ -93,7 +93,7 @@ describe('StartSession', () => {
     mockRepo.getSubscription.mockResolvedValue(mockSubscription)
     mockRepo.findCaseById.mockResolvedValue(mockCase)
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(mockSession)
     mockRepo.addMessage.mockResolvedValue(mockMessage)
 
@@ -103,11 +103,14 @@ describe('StartSession', () => {
     expect(result.session.messages).toHaveLength(1)
     expect(result.subscription.cases_used).toBe(3)
     expect(result.subscription.cases_remaining).toBe(2)
-    expect(mockRepo.incrementCasesUsed).toHaveBeenCalledWith(USER_ID)
+    expect(mockRepo.incrementCasesUsedIfAllowed).toHaveBeenCalledWith(USER_ID)
   })
 
   it('throws USAGE_LIMIT_REACHED when at limit and emits event', async () => {
-    mockRepo.getSubscription.mockResolvedValue({ ...mockSubscription, casesUsed: 5 })
+    mockRepo.getSubscription.mockResolvedValue(mockSubscription)
+    mockRepo.findCaseById.mockResolvedValue(mockCase)
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(false)
 
     await expect(useCase.execute({ userId: USER_ID, caseId: CASE_ID })).rejects.toMatchObject({
       code: 'USAGE_LIMIT_REACHED',
@@ -139,7 +142,7 @@ describe('StartSession', () => {
     mockRepo.getSubscription.mockResolvedValue({ ...mockSubscription, plan: 'pro' })
     mockRepo.findCaseById.mockResolvedValue(mockCase)
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue({ ...mockSession, isTimed: true })
     mockRepo.addMessage.mockResolvedValue(mockMessage)
 
@@ -181,13 +184,13 @@ describe('StartSession', () => {
     mockRepo.getSubscription.mockResolvedValue(mockSubscription)
     mockRepo.findCaseById.mockResolvedValue(mockCase)
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(mockSession)
     mockRepo.addMessage.mockResolvedValue(mockMessage)
 
     const result = await useCase.execute({ userId: USER_ID, caseId: CASE_ID })
     expect(result.session.id).toBe(SESSION_ID)
-    expect(mockRepo.incrementCasesUsed).toHaveBeenCalledWith(USER_ID)
+    expect(mockRepo.incrementCasesUsedIfAllowed).toHaveBeenCalledWith(USER_ID)
   })
 
   it('throws for invalid case_id UUID', async () => {

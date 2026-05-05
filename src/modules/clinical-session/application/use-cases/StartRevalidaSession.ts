@@ -52,14 +52,6 @@ export class StartRevalidaSession {
       throw new DomainException('SUBSCRIPTION_NOT_FOUND', 404)
     }
 
-    if (subscription.casesUsed >= subscription.casesLimit) {
-      throw new DomainException(
-        'USAGE_LIMIT_REACHED',
-        403,
-        JSON.stringify({ reset_at: subscription.usageResetAt }),
-      )
-    }
-
     const clinicalCase = await this.sessionRepo.findCaseById(data.case_id)
     if (!clinicalCase || clinicalCase.status !== 'approved') {
       throw new DomainException('CASE_NOT_FOUND', 404)
@@ -78,7 +70,14 @@ export class StartRevalidaSession {
       throw new DomainException('CASE_ALREADY_IN_PROGRESS', 403)
     }
 
-    await this.sessionRepo.incrementCasesUsed(input.userId)
+    const incremented = await this.sessionRepo.incrementCasesUsedIfAllowed(input.userId)
+    if (!incremented) {
+      throw new DomainException(
+        'USAGE_LIMIT_REACHED',
+        403,
+        JSON.stringify({ reset_at: subscription.usageResetAt }),
+      )
+    }
 
     const session = ClinicalSession.create({
       userId: input.userId,

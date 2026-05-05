@@ -166,7 +166,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Link reenviado se o e-mail existir e não estiver confirmado.' })
   @ApiResponse({ status: 429, description: 'Muitas tentativas. Tente novamente em 2 minutos.' })
-  async resendConfirmationHandler(@Body() body: { email: string }) {
+  async resendConfirmationHandler(@Body(new ZodValidationPipe(forgotPasswordSchema)) body: { email: string }) {
     await this.resendConfirmation.execute(body.email)
     return { message: 'Se o e-mail existir e não estiver confirmado, um novo link foi enviado.' }
   }

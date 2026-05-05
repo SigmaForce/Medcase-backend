@@ -32,6 +32,18 @@ export interface RegisterUserOutput {
   message: string;
 }
 
+type RegisterTx = {
+  user: {
+    create(args: { data: Record<string, unknown> }): Promise<{
+      id: string; email: string; fullName: string
+      country: string; university: string; role: string
+      isActive: boolean; createdAt: Date
+    }>
+  }
+  subscription: { create(args: { data: Record<string, unknown> }): Promise<unknown> }
+  emailVerification: { create(args: { data: Record<string, unknown> }): Promise<unknown> }
+}
+
 @Injectable()
 export class RegisterUser {
   private readonly logger = new Logger(RegisterUser.name)
@@ -79,8 +91,7 @@ export class RegisterUser {
 
     const transactionResult = await this.txManager.run(
       async (txRaw: unknown) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tx = txRaw as any
+        const tx = txRaw as RegisterTx
         const dbUser = await tx.user.create({
           data: {
             email: user.email,

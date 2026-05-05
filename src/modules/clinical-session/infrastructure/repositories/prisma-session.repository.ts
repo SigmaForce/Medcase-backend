@@ -155,11 +155,14 @@ export class PrismaSessionRepository implements ISessionRepository {
     }
   }
 
-  async incrementCasesUsed(userId: string): Promise<void> {
-    await this.prisma.subscription.update({
-      where: { userId },
-      data: { casesUsed: { increment: 1 } },
-    })
+  async incrementCasesUsedIfAllowed(userId: string): Promise<boolean> {
+    const count = await this.prisma.$executeRaw`
+      UPDATE subscriptions
+      SET cases_used = cases_used + 1
+      WHERE user_id = ${userId}::uuid
+        AND cases_used < cases_limit
+    `
+    return count > 0
   }
 
   async upsertPerformance({

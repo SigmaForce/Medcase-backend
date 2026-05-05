@@ -64,7 +64,7 @@ const mockRepo = {
   getSubscription: jest.fn(),
   findCaseById: jest.fn(),
   findInProgressByUserAndCase: jest.fn(),
-  incrementCasesUsed: jest.fn(),
+  incrementCasesUsedIfAllowed: jest.fn(),
   create: jest.fn(),
   addMessage: jest.fn(),
   findById: jest.fn(),
@@ -89,7 +89,7 @@ describe('StartRevalidaSession', () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription())
     mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 
@@ -110,20 +110,20 @@ describe('StartRevalidaSession', () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription())
     mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 
     await useCase.execute({ userId: USER_ID, caseId: CASE_ID })
 
-    expect(mockRepo.incrementCasesUsed).toHaveBeenCalledWith(USER_ID)
+    expect(mockRepo.incrementCasesUsedIfAllowed).toHaveBeenCalledWith(USER_ID)
   })
 
   it('returns correct cases_remaining', async () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ casesLimit: 10, casesUsed: 7 }))
     mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 
@@ -137,7 +137,7 @@ describe('StartRevalidaSession', () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ casesLimit: 5, casesUsed: 4 }))
     mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 
@@ -155,8 +155,11 @@ describe('StartRevalidaSession', () => {
     })
   })
 
-  it('throws USAGE_LIMIT_REACHED when casesUsed >= casesLimit', async () => {
-    mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ casesLimit: 5, casesUsed: 5 }))
+  it('throws USAGE_LIMIT_REACHED when incrementCasesUsedIfAllowed returns false', async () => {
+    mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ casesLimit: 5, casesUsed: 3 }))
+    mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
+    mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(false)
 
     await expect(useCase.execute({ userId: USER_ID, caseId: CASE_ID })).rejects.toMatchObject({
       code: 'USAGE_LIMIT_REACHED',
@@ -168,7 +171,7 @@ describe('StartRevalidaSession', () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription({ plan: 'free', casesLimit: 5, casesUsed: 2 }))
     mockRepo.findCaseById.mockResolvedValue(makeRevalidaCase())
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 
@@ -249,7 +252,7 @@ describe('StartRevalidaSession', () => {
     mockRepo.getSubscription.mockResolvedValue(makeProSubscription())
     mockRepo.findCaseById.mockResolvedValue(caseWithoutInstructions)
     mockRepo.findInProgressByUserAndCase.mockResolvedValue(null)
-    mockRepo.incrementCasesUsed.mockResolvedValue(undefined)
+    mockRepo.incrementCasesUsedIfAllowed.mockResolvedValue(true)
     mockRepo.create.mockResolvedValue(makeSession())
     mockRepo.addMessage.mockResolvedValue(makeMessage())
 

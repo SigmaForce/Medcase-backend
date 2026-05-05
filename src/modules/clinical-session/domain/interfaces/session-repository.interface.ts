@@ -52,7 +52,7 @@ export interface ISessionRepository {
   updateRequestedExams(sessionId: string, slugs: string[]): Promise<void>
   findCaseById(caseId: string): Promise<ClinicalCaseRecord | null>
   getSubscription(userId: string): Promise<SubscriptionRecord | null>
-  incrementCasesUsed(userId: string): Promise<void>
+  incrementCasesUsedIfAllowed(userId: string): Promise<boolean>
   upsertPerformance(params: {
     userId: string
     specialtyId: number

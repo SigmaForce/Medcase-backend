@@ -53,11 +53,6 @@ export class StartSession {
       throw new DomainException('SUBSCRIPTION_NOT_FOUND', 404)
     }
 
-    if (subscription.casesUsed >= subscription.casesLimit) {
-      this.eventEmitter.emit('usage_limit.reached', { userId: input.userId })
-      throw new DomainException('USAGE_LIMIT_REACHED', 403, JSON.stringify({ reset_at: subscription.usageResetAt }))
-    }
-
     if (data.is_timed && subscription.plan !== 'pro') {
       throw new DomainException('TIMED_MODE_REQUIRES_PRO', 403)
     }
@@ -72,7 +67,11 @@ export class StartSession {
       throw new DomainException('CASE_ALREADY_IN_PROGRESS', 403)
     }
 
-    await this.sessionRepo.incrementCasesUsed(input.userId)
+    const incremented = await this.sessionRepo.incrementCasesUsedIfAllowed(input.userId)
+    if (!incremented) {
+      this.eventEmitter.emit('usage_limit.reached', { userId: input.userId })
+      throw new DomainException('USAGE_LIMIT_REACHED', 403, JSON.stringify({ reset_at: subscription.usageResetAt }))
+    }
 
     const session = ClinicalSession.create({
       userId: input.userId,
