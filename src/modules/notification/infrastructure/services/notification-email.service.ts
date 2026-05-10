@@ -67,10 +67,10 @@ export class NotificationEmailService {
             <tr><td style="${BOX_GREEN}">
               <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Voc&ecirc; tem <strong>${data.cases_limit} casos gratuitos</strong> por m&ecirc;s. Inclui:</p>
               <p style="${BOX_P}">
-                <span style="${CHECK}">&check;</span>Casos cl&iacute;nicos reais e atualizados<br>
-                <span style="${CHECK}">&check;</span>Simula&ccedil;&otilde;es para Revalida<br>
-                <span style="${CHECK}">&check;</span>Feedback detalhado do seu racioc&iacute;nio<br>
-                <span style="${CHECK}">&check;</span>Renova&ccedil;&atilde;o autom&aacute;tica todo m&ecirc;s
+                <span style="${CHECK}">&#10003;</span>Casos cl&iacute;nicos reais e atualizados<br>
+                <span style="${CHECK}">&#10003;</span>Simula&ccedil;&otilde;es para Revalida<br>
+                <span style="${CHECK}">&#10003;</span>Feedback detalhado do seu racioc&iacute;nio<br>
+                <span style="${CHECK}">&#10003;</span>Renova&ccedil;&atilde;o autom&aacute;tica todo m&ecirc;s
               </p>
             </td></tr>
           </table>
@@ -147,10 +147,10 @@ export class NotificationEmailService {
             <tr><td style="${BOX_GREEN}">
               <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Seu plano inclui:</p>
               <p style="${BOX_P}">
-                <span style="${CHECK}">&check;</span>Acesso ilimitado a casos cl&iacute;nicos<br>
-                <span style="${CHECK}">&check;</span>Pr&oacute;xima cobran&ccedil;a: <strong>${data.next_billing_date}</strong><br>
-                <span style="${CHECK}">&check;</span>Valor: <strong>${data.price}</strong><br>
-                <span style="${CHECK}">&check;</span>Renova&ccedil;&atilde;o autom&aacute;tica mensal
+                <span style="${CHECK}">&#10003;</span>Acesso ilimitado a casos cl&iacute;nicos<br>
+                <span style="${CHECK}">&#10003;</span>Pr&oacute;xima cobran&ccedil;a: <strong>${data.next_billing_date}</strong><br>
+                <span style="${CHECK}">&#10003;</span>Valor: <strong>${data.price}</strong><br>
+                <span style="${CHECK}">&#10003;</span>Renova&ccedil;&atilde;o autom&aacute;tica mensal
               </p>
             </td></tr>
           </table>

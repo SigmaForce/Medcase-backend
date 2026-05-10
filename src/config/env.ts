@@ -17,6 +17,7 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1),
   STRIPE_PRICE_ID_PRO: z.string().min(1),
+  STRIPE_COUPON_ID: z.string().optional(),
   MP_ACCESS_TOKEN: z.string().min(1),
   MP_WEBHOOK_SECRET: z.string().min(1),
   POSTHOG_API_KEY: z.string().min(1),

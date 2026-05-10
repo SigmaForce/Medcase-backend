@@ -30,8 +30,8 @@ const mockMercadoPagoAdapter = {
 
 const validBody = {
   plan: 'pro',
-  success_url: 'https://app.medcase.com/success',
-  cancel_url: 'https://app.medcase.com/cancel',
+  success_url: 'https://www.medcase.com.br/success',
+  cancel_url: 'https://www.medcase.com.br/cancel',
 }
 
 describe('CreateCheckout', () => {

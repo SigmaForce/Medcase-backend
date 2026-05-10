@@ -4,7 +4,7 @@ jest.mock('src/config/env', () => ({
     ADMIN_EMAIL: 'admin@test.com',
     POSTHOG_API_KEY: 'test',
     POSTHOG_HOST: 'https://app.posthog.com',
-    APP_URL: 'https://app.medcase.com',
+    APP_URL: 'https://www.medcase.com.br',
     STRIPE_SECRET_KEY: 'sk_test',
     STRIPE_PRICE_ID_PRO: 'price_test',
     STRIPE_WEBHOOK_SECRET: 'whsec_test',
@@ -70,7 +70,7 @@ describe('GetPortalUrl', () => {
 
       expect(stripeAdapter.createBillingPortalSession).toHaveBeenCalledWith(
         'cus_test',
-        'https://app.medcase.com/dashboard',
+        'https://www.medcase.com.br/dashboard',
       )
       expect(result).toEqual({
         portal_url: 'https://billing.stripe.com/session/test',
@@ -92,7 +92,7 @@ describe('GetPortalUrl', () => {
       expect(subscriptionRepo.update).toHaveBeenCalled()
       expect(stripeAdapter.createBillingPortalSession).toHaveBeenCalledWith(
         'cus_recovered',
-        'https://app.medcase.com/dashboard',
+        'https://www.medcase.com.br/dashboard',
       )
       expect(result).toEqual({ portal_url: 'https://billing.stripe.com/session/test', provider: 'stripe' })
     })

@@ -30,7 +30,7 @@ export const buildEmailHtml = ({ content, hero }: BuildEmailHtmlParams): string 
 
           <!-- Hero Header -->
           <tr>
-            <td style="background-color:#08885D;padding:36px 40px 40px;text-align:center;border-radius:20px 20px 0 0;">
+            <td style="background-color:#08362C;background:linear-gradient(135deg,#08362C 0%,#0A5C47 100%);padding:36px 40px 40px;text-align:center;border-radius:20px 20px 0 0;">
               <p style="margin:0 0 10px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.65);letter-spacing:2px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.label}</p>
               <h1 style="margin:0 0 14px;font-size:30px;font-weight:700;color:#FFFFFF;line-height:1.2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.title}</h1>
               <p style="margin:0 auto;font-size:15px;color:rgba(255,255,255,0.82);line-height:1.6;max-width:440px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">${hero.subtitle}</p>

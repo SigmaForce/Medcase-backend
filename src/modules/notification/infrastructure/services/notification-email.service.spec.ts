@@ -10,7 +10,7 @@ jest.mock('../../../../config/env', () => ({
   env: {
     RESEND_API_KEY: 'test-resend-key',
     RESEND_FROM_EMAIL: 'noreply@medcase.com',
-    APP_URL: 'https://app.medcase.com',
+    APP_URL: 'https://www.medcase.com.br',
   },
 }))
 
@@ -68,7 +68,7 @@ describe('NotificationEmailService', () => {
     await service.send({
       to: 'streak@test.com',
       template: 'streak-reminder',
-      data: { first_name: 'Ana', remaining_cases: 4, app_link: 'https://app.medcase.com' },
+      data: { first_name: 'Ana', remaining_cases: 4, app_link: 'https://www.medcase.com.br' },
     })
 
     expect(mockEmailsSend).toHaveBeenCalledTimes(1)

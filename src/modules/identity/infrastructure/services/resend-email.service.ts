@@ -51,9 +51,9 @@ export class ResendEmailService implements IEmailService {
         <tr><td style="${BOX_GREEN}">
           <p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#1A2B25;line-height:1.5;">Ao ativar sua conta voc&ecirc; ter&aacute; acesso a:</p>
           <p style="${BOX_P}">
-            <span style="${CHECK}">&check;</span>Casos cl&iacute;nicos reais e atualizados<br>
-            <span style="${CHECK}">&check;</span>Simula&ccedil;&otilde;es para Revalida<br>
-            <span style="${CHECK}">&check;</span>Treino orientado para aprova&ccedil;&atilde;o
+            <span style="${CHECK}">&#10003;</span>Casos cl&iacute;nicos reais e atualizados<br>
+            <span style="${CHECK}">&#10003;</span>Simula&ccedil;&otilde;es para Revalida<br>
+            <span style="${CHECK}">&#10003;</span>Treino orientado para aprova&ccedil;&atilde;o
           </p>
         </td></tr>
       </table>

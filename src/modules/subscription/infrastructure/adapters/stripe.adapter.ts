@@ -34,6 +34,7 @@ export class StripeAdapter {
       success_url: params.dto.success_url,
       cancel_url: params.dto.cancel_url,
       metadata: { user_id: params.userId },
+      ...(env.STRIPE_COUPON_ID && { discounts: [{ coupon: env.STRIPE_COUPON_ID }] }),
     })
 
     return {
