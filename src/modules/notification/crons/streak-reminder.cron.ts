@@ -16,7 +16,7 @@ export class StreakReminderCron {
     private readonly emailService: NotificationEmailService,
   ) {}
 
-  @Cron('0 21 * * *')
+  @Cron('0 21 * * 0')
   async sendStreakReminders(): Promise<void> {
     let skip = 0
     let processed = 0
