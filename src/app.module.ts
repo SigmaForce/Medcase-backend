@@ -8,6 +8,7 @@ import { DatabaseModule } from './infra/database/database.module'
 import { DomainExceptionFilter } from './infra/http/filters/domain-exception.filter'
 import { JwtAuthGuard } from './infra/http/guards/jwt-auth.guard'
 import { ThrottlerBehindProxyGuard } from './infra/http/guards/throttler-behind-proxy.guard'
+import { HealthController } from './infra/http/health/health.controller'
 import { SubscriptionModule } from './modules/subscription/subscription.module'
 import { AnalyticsModule } from './modules/analytics/analytics.module'
 import { IdentityModule } from './modules/identity/identity.module'
@@ -34,6 +35,7 @@ import { env } from './config/env'
     ClinicalSessionModule,
     CurationModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_FILTER, useClass: DomainExceptionFilter },
     { provide: APP_GUARD, useClass: JwtAuthGuard },

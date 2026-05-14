@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
 import { CurrentUser, JwtPayload } from '../../../../infra/http/decorators/current-user.decorator'
 import { ZodValidationPipe } from '../../../../infra/http/pipes/zod-validation.pipe'
 import {
@@ -14,6 +15,7 @@ import {
 export class RevalidaCaseController {
   constructor(private readonly generateRevalidaCase: GenerateRevalidaCase) {}
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('generate')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({

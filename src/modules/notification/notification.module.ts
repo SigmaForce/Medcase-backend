@@ -15,6 +15,7 @@ import { CaseRejectedListener } from './application/listeners/case-rejected.list
 
 import { StreakReminderCron } from './crons/streak-reminder.cron'
 import { CostAlertCron } from './crons/cost-alert.cron'
+import { CleanExpiredTokensCron } from './crons/clean-expired-tokens.cron'
 
 @Module({
   imports: [SubscriptionModule, IdentityModule, AnalyticsModule],
@@ -29,6 +30,7 @@ import { CostAlertCron } from './crons/cost-alert.cron'
     CaseRejectedListener,
     StreakReminderCron,
     CostAlertCron,
+    CleanExpiredTokensCron,
   ],
   exports: [NotificationEmailService],
 })
