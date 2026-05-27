@@ -43,17 +43,18 @@ export class HandleMpWebhook {
     const topic = body.type ?? body.action ?? ''
     const eventId = `mp_${topic}_${dataId}`
 
-    const existing = await this.paymentEventRepo.findByExternalId('mercadopago', eventId)
-    if (existing) return
-
-    await this.handleTopic(topic, dataId)
-
-    await this.paymentEventRepo.save({
+    const claimed = await this.paymentEventRepo.claim({
       provider: 'mercadopago',
       eventType: topic,
       externalId: eventId,
       rawPayload: body as Record<string, unknown>,
+      status: 'processing',
     })
+    if (!claimed) return
+
+    await this.handleTopic(topic, dataId)
+
+    await this.paymentEventRepo.updateStatus('mercadopago', eventId, 'processed')
   }
 
   private async handleTopic(topic: string, dataId: string): Promise<void> {

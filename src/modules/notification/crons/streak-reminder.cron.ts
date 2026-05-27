@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule'
 import { env } from '../../../config/env'
 import { IUserStreakRepository } from '../../identity/domain/interfaces/user-streak-repository.interface'
 import { NotificationEmailService } from '../infrastructure/services/notification-email.service'
+import { sanitizeError } from '../../../infra/logging/sanitize-error'
 
 const BATCH_SIZE = 100
 
@@ -40,7 +41,7 @@ export class StreakReminderCron {
           processed++
         } catch (err) {
           failed++
-          this.logger.error('Failed to send case reminder', { userId: user.userId, error: err })
+          this.logger.error('Failed to send case reminder', { userId: user.userId, error: sanitizeError(err) })
         }
       }
 

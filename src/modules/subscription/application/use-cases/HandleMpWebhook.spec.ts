@@ -21,7 +21,9 @@ const mockSubscriptionRepo = {
 
 const mockPaymentEventRepo = {
   findByExternalId: jest.fn(),
+  claim: jest.fn(),
   save: jest.fn(),
+  updateStatus: jest.fn(),
 }
 
 const mockMercadoPagoAdapter = {
@@ -49,6 +51,8 @@ describe('HandleMpWebhook', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
+    mockPaymentEventRepo.claim.mockResolvedValue(true)
+    mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
     useCase = new HandleMpWebhook(
       mockSubscriptionRepo as never,
       mockPaymentEventRepo as never,
@@ -59,13 +63,13 @@ describe('HandleMpWebhook', () => {
 
   describe('payment approved', () => {
     it('should upgrade subscription and emit SubscriptionUpgradedEvent', async () => {
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockPaymentEventRepo.claim.mockResolvedValue(true)
       mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
         externalReference: 'user-1',
         status: 'approved',
       })
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({
         body: makePaymentBody('pay_123'),
@@ -88,12 +92,12 @@ describe('HandleMpWebhook', () => {
 
   describe('payment rejected', () => {
     it('should emit PaymentFailedEvent for rejected payment', async () => {
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockPaymentEventRepo.claim.mockResolvedValue(true)
       mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
         externalReference: 'user-2',
         status: 'rejected',
       })
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({
         body: makePaymentBody('pay_rejected'),
@@ -108,12 +112,12 @@ describe('HandleMpWebhook', () => {
     })
 
     it('should emit PaymentFailedEvent for cancelled payment', async () => {
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockPaymentEventRepo.claim.mockResolvedValue(true)
       mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
         externalReference: 'user-3',
         status: 'cancelled',
       })
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({
         body: makePaymentBody('pay_cancelled'),
@@ -172,7 +176,7 @@ describe('HandleMpWebhook', () => {
 
   describe('idempotency', () => {
     it('should return early without processing when event already exists', async () => {
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue({ id: 'existing-event' })
+      mockPaymentEventRepo.claim.mockResolvedValue(false)
 
       await useCase.execute({
         body: makePaymentBody('pay_dup'),
@@ -189,13 +193,15 @@ describe('HandleMpWebhook', () => {
     it('documents risk: concurrent webhooks with same id both process when DB check is not atomic', async () => {
       // Ambas as chamadas simultâneas vêem null (DB check não é atômico sem lock)
       // upgrade é chamado 2x — a unique constraint em PaymentEvent é a última defesa no DB real
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
       mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
         externalReference: 'user-race',
         status: 'approved',
       })
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await Promise.all([
         useCase.execute({ body: makePaymentBody('pay_race'), headers: validHeaders() }),
@@ -204,21 +210,21 @@ describe('HandleMpWebhook', () => {
 
       // Documenta o risco: sem transação atômica no application layer,
       // upgrade pode ser chamado 2x. O DB (@@unique em PaymentEvent) é a barreira final.
-      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(2)
+      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(1)
     })
 
     it('should process only once when first webhook saves event before second checks', async () => {
       // Simula sequência: primeiro salva, segundo encontra evento existente
-      mockPaymentEventRepo.findByExternalId
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'evt-saved' })
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
 
       mockMercadoPagoAdapter.getPaymentStatus.mockResolvedValue({
         externalReference: 'user-seq',
         status: 'approved',
       })
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({ body: makePaymentBody('pay_seq'), headers: validHeaders() })
       await useCase.execute({ body: makePaymentBody('pay_seq'), headers: validHeaders() })
@@ -229,13 +235,13 @@ describe('HandleMpWebhook', () => {
     it('should handle subscription_preapproval idempotently in sequence', async () => {
       const preapprovalBody = { type: 'subscription_preapproval', data: { id: 'pre_123' } }
 
-      mockPaymentEventRepo.findByExternalId
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'evt-pre' })
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
 
       mockSubscriptionRepo.findByExternalId.mockResolvedValue({ userId: 'user-down', id: 'sub-1' })
       mockSubscriptionRepo.downgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
+      mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({ body: preapprovalBody, headers: validHeaders() })
       await useCase.execute({ body: preapprovalBody, headers: validHeaders() })

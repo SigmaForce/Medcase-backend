@@ -16,6 +16,7 @@ import { DomainException } from "../../../../errors/domain-exception";
 import { registerUserSchema } from "../dtos/register-user.dto";
 import { UserResponseDto } from "../dtos/user-response.dto";
 import { env } from "src/config/env";
+import { sanitizeError } from "../../../../infra/logging/sanitize-error";
 
 export interface RegisterUserInput {
   email: string;
@@ -125,7 +126,9 @@ export class RegisterUser {
 
         if (data.invite_code && inviteTrialDays !== null) {
           const invite = await this.inviteCodeRepo.findValid(data.invite_code);
-          if (invite) await this.inviteCodeRepo.markAsUsed(invite.id, dbUser.id);
+          if (!invite) throw new DomainException("INVALID_OR_EXPIRED_INVITE");
+          const marked = await this.inviteCodeRepo.markAsUsed(invite.id, dbUser.id);
+          if (!marked) throw new DomainException("INVALID_OR_EXPIRED_INVITE");
         }
 
         const rawToken = randomBytes(32).toString("hex");
@@ -152,7 +155,7 @@ export class RegisterUser {
         fullName: createdUser.fullName,
       });
     } catch (err) {
-      this.logger.error("Failed to send confirmation email", { userId: createdUser.id, error: err });
+      this.logger.error("Failed to send confirmation email", { userId: createdUser.id, error: sanitizeError(err) });
     }
 
     await this.auditLogRepo.log({

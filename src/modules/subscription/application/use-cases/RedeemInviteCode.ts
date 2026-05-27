@@ -53,16 +53,16 @@ export class RedeemInviteCode {
     })
     subscription.trialEndsAt = trialEndsAt
 
-    await this.subscriptionRepo.update(subscription)
-    await this.inviteCodeRepo.markAsUsed(inviteCode.id, userId)
+    const updatedSubscription = await this.subscriptionRepo.redeemInviteCode(subscription, inviteCode.id, userId)
+    if (!updatedSubscription) throw new DomainException('INVITE_CODE_INVALID', 400)
 
     this.eventEmitter.emit('subscription.upgraded', new SubscriptionUpgradedEvent(userId, 'invite', true))
 
     return {
-      plan: subscription.plan,
+      plan: updatedSubscription.plan,
       trial_ends_at: trialEndsAt,
-      cases_limit: subscription.casesLimit,
-      generations_limit: subscription.generationsLimit,
+      cases_limit: updatedSubscription.casesLimit,
+      generations_limit: updatedSubscription.generationsLimit,
     }
   }
 }

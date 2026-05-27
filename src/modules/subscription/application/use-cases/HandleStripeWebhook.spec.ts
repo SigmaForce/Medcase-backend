@@ -27,6 +27,7 @@ const mockSubscriptionRepo = {
 
 const mockPaymentEventRepo = {
   findByExternalId: jest.fn(),
+  claim: jest.fn(),
   save: jest.fn(),
   updateStatus: jest.fn(),
 }
@@ -94,6 +95,7 @@ describe('HandleStripeWebhook', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPaymentEventRepo.claim.mockResolvedValue(true)
     useCase = new HandleStripeWebhook(
       mockSubscriptionRepo as never,
       mockPaymentEventRepo as never,
@@ -333,26 +335,25 @@ describe('HandleStripeWebhook', () => {
     it('should return early without processing when event already has status processed', async () => {
       const stripeEvent = makeCheckoutSessionEvent('user-1')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue({ id: 'existing', status: 'processed' })
+      mockPaymentEventRepo.claim.mockResolvedValue(false)
 
       await useCase.execute({ rawBody: Buffer.from('{}'), signature: 'sig_valid' })
 
       expect(mockSubscriptionRepo.upgrade).not.toHaveBeenCalled()
       expect(mockEventEmitter.emit).not.toHaveBeenCalled()
-      expect(mockPaymentEventRepo.save).not.toHaveBeenCalled()
+      expect(mockPaymentEventRepo.claim).toHaveBeenCalled()
     })
 
-    it('should save event with status processing BEFORE calling handleEvent', async () => {
+    it('should claim event with status processing BEFORE calling handleEvent', async () => {
       const stripeEvent = makeCheckoutSessionEvent('user-order')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
       mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       const callOrder: string[] = []
-      mockPaymentEventRepo.save.mockImplementation(() => {
-        callOrder.push('save')
-        return Promise.resolve(undefined)
+      mockPaymentEventRepo.claim.mockImplementation(() => {
+        callOrder.push('claim')
+        return Promise.resolve(true)
       })
       mockStripeAdapter.retrieveSubscription.mockImplementation(() => {
         callOrder.push('handleEvent')
@@ -361,38 +362,38 @@ describe('HandleStripeWebhook', () => {
 
       await useCase.execute({ rawBody: Buffer.from('{}'), signature: 'sig_valid' })
 
-      expect(callOrder[0]).toBe('save')
+      expect(callOrder[0]).toBe('claim')
       expect(callOrder[1]).toBe('handleEvent')
-      expect(mockPaymentEventRepo.save).toHaveBeenCalledWith(
+      expect(mockPaymentEventRepo.claim).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'processing' }),
       )
       expect(mockPaymentEventRepo.updateStatus).toHaveBeenCalledWith('stripe', stripeEvent.id, 'processed')
     })
 
-    it('should reprocess event with status processing (retry after failure)', async () => {
+    it('should not reprocess an event that was already claimed', async () => {
       const stripeEvent = makeCheckoutSessionEvent('user-retry')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
       // status is 'processing' — not 'processed' — so should reprocess
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue({ id: 'existing', status: 'processing' })
+      mockPaymentEventRepo.claim.mockResolvedValue(false)
       mockStripeAdapter.retrieveSubscription.mockResolvedValue(makeStripeSubscription())
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
       mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({ rawBody: Buffer.from('{}'), signature: 'sig_valid' })
 
-      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalled()
+      expect(mockSubscriptionRepo.upgrade).not.toHaveBeenCalled()
     })
   })
 
   describe('race condition', () => {
-    it('documents risk: concurrent webhooks with same event id both process when DB check is not atomic', async () => {
+    it('processes only the webhook call that atomically claims the event', async () => {
       // Ambas as chamadas simultâneas vêem null — a unique constraint em PaymentEvent é a última defesa
       const stripeEvent = makeCheckoutSessionEvent('user-race')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
-      mockPaymentEventRepo.findByExternalId.mockResolvedValue(null)
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
       mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
       mockStripeAdapter.retrieveSubscription.mockResolvedValue(makeStripeSubscription())
 
@@ -403,17 +404,16 @@ describe('HandleStripeWebhook', () => {
 
       // Documenta o risco: sem lock no application layer, upgrade pode ser chamado 2x.
       // O DB (@@unique em PaymentEvent) garante idempotência no nível de persistência.
-      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(2)
+      expect(mockSubscriptionRepo.upgrade).toHaveBeenCalledTimes(1)
     })
 
-    it('should process only once when first webhook saves event before second checks', async () => {
+    it('should process only once when first webhook claims event before second checks', async () => {
       const stripeEvent = makeCheckoutSessionEvent('user-seq')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
-      mockPaymentEventRepo.findByExternalId
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'evt-saved', status: 'processed' })
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
       mockSubscriptionRepo.upgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
       mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
       mockStripeAdapter.retrieveSubscription.mockResolvedValue(makeStripeSubscription())
 
@@ -426,12 +426,11 @@ describe('HandleStripeWebhook', () => {
     it('should handle subscription.deleted idempotently in sequence', async () => {
       const stripeEvent = makeSubscriptionDeletedEvent('sub_seq')
       mockStripeAdapter.constructWebhookEvent.mockReturnValue(stripeEvent)
-      mockPaymentEventRepo.findByExternalId
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'evt-del', status: 'processed' })
+      mockPaymentEventRepo.claim
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false)
       mockSubscriptionRepo.findByExternalId.mockResolvedValue({ userId: 'user-down' })
       mockSubscriptionRepo.downgrade.mockResolvedValue(undefined)
-      mockPaymentEventRepo.save.mockResolvedValue(undefined)
       mockPaymentEventRepo.updateStatus.mockResolvedValue(undefined)
 
       await useCase.execute({ rawBody: Buffer.from('{}'), signature: 'sig_valid' })

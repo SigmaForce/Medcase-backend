@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { IUsageMetricsRepository } from '../../analytics/domain/interfaces/usage-metrics-repository.interface'
 import { NotificationEmailService } from '../infrastructure/services/notification-email.service'
 import { env } from '../../../config/env'
+import { sanitizeError } from '../../../infra/logging/sanitize-error'
 
 const COST_THRESHOLD_USD = 0.10
 
@@ -37,7 +38,7 @@ export class CostAlertCron {
         this.logger.warn(`Alerta de custo: $${stats.costPerSession.toFixed(3)}/sessão — total $${stats.estimatedUsd.toFixed(2)}`)
       }
     } catch (err) {
-      this.logger.error('Falha no cron de alerta de custo', { error: err })
+      this.logger.error('Falha no cron de alerta de custo', { error: sanitizeError(err) })
     }
   }
 }

@@ -252,13 +252,15 @@ export class AuthController {
 
   private setAuthCookies(res: Response, accessToken: string, refreshToken: string): void {
     const isProd = env.NODE_ENV === 'production'
-    const base = { httpOnly: true, secure: isProd, sameSite: 'lax' as const }
+    const base = { httpOnly: true, secure: isProd, sameSite: 'lax' as const, path: '/' }
     res.cookie('access_token', accessToken, { ...base, maxAge: 3600 * 1000 })
     res.cookie('refresh_token', refreshToken, { ...base, maxAge: 7 * 24 * 3600 * 1000 })
   }
 
   private clearAuthCookies(res: Response): void {
-    res.clearCookie('access_token')
-    res.clearCookie('refresh_token')
+    const isProd = env.NODE_ENV === 'production'
+    const base = { httpOnly: true, secure: isProd, sameSite: 'lax' as const, path: '/' }
+    res.clearCookie('access_token', base)
+    res.clearCookie('refresh_token', base)
   }
 }

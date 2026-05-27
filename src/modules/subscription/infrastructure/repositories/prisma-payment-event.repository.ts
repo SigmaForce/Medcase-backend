@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../../../../infra/database/prisma.service'
 import {
   IPaymentEventRepository,
@@ -22,6 +23,18 @@ export class PrismaPaymentEventRepository implements IPaymentEventRepository {
       where: { unique_external_event: { provider, externalId } },
       data: { status },
     })
+  }
+
+  async claim(params: SavePaymentEventParams): Promise<boolean> {
+    try {
+      await this.save(params)
+      return true
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        return false
+      }
+      throw err
+    }
   }
 
   async save(params: SavePaymentEventParams): Promise<PaymentEvent> {

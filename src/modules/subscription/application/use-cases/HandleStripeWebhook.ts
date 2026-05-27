@@ -33,16 +33,14 @@ export class HandleStripeWebhook {
       throw new UnauthorizedException('INVALID_STRIPE_SIGNATURE')
     }
 
-    const existing = await this.paymentEventRepo.findByExternalId('stripe', event.id)
-    if (existing?.status === 'processed') return
-
-    await this.paymentEventRepo.save({
+    const claimed = await this.paymentEventRepo.claim({
       provider: 'stripe',
       eventType: event.type,
       externalId: event.id,
       status: 'processing',
       rawPayload: event as unknown as Record<string, unknown>,
     })
+    if (!claimed) return
 
     await this.handleEvent(event)
 

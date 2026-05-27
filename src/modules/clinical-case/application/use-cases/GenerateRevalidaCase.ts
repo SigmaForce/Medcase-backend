@@ -9,6 +9,7 @@ import { RevalidaCaseGeneratorService } from '../../infrastructure/services/reva
 import { DomainException } from '../../../../errors/domain-exception'
 import { Subscription } from '../../../subscription/domain/entities/subscription.entity'
 import { z } from 'zod'
+import { sanitizeError } from '../../../../infra/logging/sanitize-error'
 
 const attentionLevelValues = ['primaria', 'secundaria', 'terciaria'] as const
 
@@ -85,8 +86,14 @@ export class GenerateRevalidaCase {
     }
 
     if (subscription) {
-      subscription.generationsUsed += 1
-      await this.subscriptionRepo.update(subscription)
+      const incremented = await this.subscriptionRepo.incrementGenerationsUsedIfAllowed(input.userId)
+      if (!incremented) {
+        throw new DomainException(
+          'GENERATION_LIMIT_REACHED',
+          429,
+          JSON.stringify({ reset_at: subscription.usageResetAt }),
+        )
+      }
     }
 
     let generatedData: Awaited<ReturnType<RevalidaCaseGeneratorService['generate']>>
@@ -103,11 +110,10 @@ export class GenerateRevalidaCase {
       this.logger.error('Revalida generation error', {
         userId: input.userId,
         specialtyId: input.specialtyId,
-        error: err,
+        error: sanitizeError(err),
       })
       if (subscription) {
-        subscription.generationsUsed -= 1
-        await this.subscriptionRepo.update(subscription)
+        await this.subscriptionRepo.decrementGenerationsUsed(input.userId)
       }
       throw new DomainException('REVALIDA_GENERATION_FAILED', 500)
     }

@@ -6,6 +6,7 @@ import { InviteCode } from '../../domain/entities/invite-code.entity'
 const mockSubscriptionRepo = {
   findByUserId: jest.fn(),
   update: jest.fn(),
+  redeemInviteCode: jest.fn(),
 }
 
 const mockInviteCodeRepo = {
@@ -80,7 +81,7 @@ describe('RedeemInviteCode', () => {
       useCase.execute({ userId: 'user-1', body: { code: 'BETA-ABC123' } }),
     ).rejects.toMatchObject({ code: 'ALREADY_PRO' })
 
-    expect(mockSubscriptionRepo.update).not.toHaveBeenCalled()
+    expect(mockSubscriptionRepo.redeemInviteCode).not.toHaveBeenCalled()
     expect(mockInviteCodeRepo.markAsUsed).not.toHaveBeenCalled()
   })
 
@@ -90,15 +91,17 @@ describe('RedeemInviteCode', () => {
 
     mockInviteCodeRepo.findValid.mockResolvedValue(inviteCode)
     mockSubscriptionRepo.findByUserId.mockResolvedValue(subscription)
-    mockSubscriptionRepo.update.mockResolvedValue(subscription)
+    mockSubscriptionRepo.redeemInviteCode.mockResolvedValue(subscription)
     mockInviteCodeRepo.markAsUsed.mockResolvedValue(undefined)
 
     const result = await useCase.execute({ userId: 'user-1', body: { code: 'BETA-ABC123' } })
 
-    expect(mockSubscriptionRepo.update).toHaveBeenCalledWith(
+    expect(mockSubscriptionRepo.redeemInviteCode).toHaveBeenCalledWith(
       expect.objectContaining({ plan: 'pro', status: 'trial', provider: 'invite' }),
+      inviteCode.id,
+      'user-1',
     )
-    expect(mockInviteCodeRepo.markAsUsed).toHaveBeenCalledWith(inviteCode.id, 'user-1')
+    expect(mockInviteCodeRepo.markAsUsed).not.toHaveBeenCalled()
     expect(mockEventEmitter.emit).toHaveBeenCalledWith(
       'subscription.upgraded',
       expect.objectContaining({ userId: 'user-1', provider: 'invite', trialUsed: true }),
@@ -107,6 +110,21 @@ describe('RedeemInviteCode', () => {
     expect(result.cases_limit).toBe(999)
     expect(result.generations_limit).toBe(999)
     expect(result.trial_ends_at).toBeInstanceOf(Date)
+  })
+
+  it('should throw INVITE_CODE_INVALID when atomic redeem loses the race', async () => {
+    const inviteCode = makeInviteCode()
+    const subscription = makeFreeSubscription()
+
+    mockInviteCodeRepo.findValid.mockResolvedValue(inviteCode)
+    mockSubscriptionRepo.findByUserId.mockResolvedValue(subscription)
+    mockSubscriptionRepo.redeemInviteCode.mockResolvedValue(null)
+
+    await expect(
+      useCase.execute({ userId: 'user-1', body: { code: 'BETA-ABC123' } }),
+    ).rejects.toMatchObject({ code: 'INVITE_CODE_INVALID' })
+
+    expect(mockEventEmitter.emit).not.toHaveBeenCalled()
   })
 
   it('should throw on invalid body (zod validation)', async () => {
