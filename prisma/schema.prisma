@@ -45,6 +45,9 @@ model User {
   casesCreated        ClinicalCase[]      @relation("CasesCreated")
   casesReviewed       ClinicalCase[]      @relation("CasesReviewed")
   sessions            Session[]
+  objectiveSimulations ObjectiveSimulation[]
+  objectiveAttempts    ObjectiveAttempt[]
+  objectiveQuestionsCreated ObjectiveQuestion[] @relation("ObjectiveQuestionsCreated")
   studentPerformance  StudentPerformance[]
   caseRatings         CaseRating[]
   reviewedQueueItems  CaseReviewQueue[]   @relation("ReviewedBy")
@@ -170,6 +173,7 @@ model Specialty {
   icon    String?
 
   clinicalCases      ClinicalCase[]
+  objectiveQuestions ObjectiveQuestion[]
   studentPerformance StudentPerformance[]
 
   @@map("specialties")
@@ -279,6 +283,95 @@ model StudentPerformance {
 
   @@unique([userId, specialtyId], name: "unique_perf")
   @@map("student_performance")
+}
+
+// ─── Objective Exam Phase 1 ───────────────────────────────────────────────────
+
+enum ObjectiveQuestionSource {
+  inep
+  ai_generated
+}
+
+enum ObjectiveSimulationStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+model ObjectiveQuestion {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  specialtyId        Int?                    @map("specialty_id")
+  createdById        String?                 @map("created_by") @db.Uuid
+  stem               String
+  alternatives       Json
+  correctAlternative String                  @map("correct_alternative")
+  explanation        String?
+  difficulty         CaseDifficulty
+  status             CaseStatus              @default(pending_review)
+  sourceType         ObjectiveQuestionSource @map("source_type")
+  sourceLabel        String                  @map("source_label")
+  year               Int?
+  edition            String?
+  externalId         String                  @unique @map("external_id")
+  sourceUrl          String?                 @map("source_url")
+  tags               String[]                @default([])
+  isAnnulled         Boolean                 @default(false) @map("is_annulled")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+
+  specialty Specialty? @relation(fields: [specialtyId], references: [id])
+  createdBy User?     @relation("ObjectiveQuestionsCreated", fields: [createdById], references: [id])
+  attempts  ObjectiveAttempt[]
+
+  @@index([status, sourceType])
+  @@index([specialtyId])
+  @@index([difficulty])
+  @@index([year, edition])
+  @@map("objective_questions")
+}
+
+model ObjectiveSimulation {
+  id             String                    @id @default(uuid()) @db.Uuid
+  userId         String                    @map("user_id") @db.Uuid
+  status         ObjectiveSimulationStatus @default(in_progress)
+  questionCount  Int                       @map("question_count")
+  filters        Json                      @default("{}")
+  questionOrder  String[]                  @default([]) @map("question_order")
+  timedLimitSecs Int                       @default(18000) @map("timed_limit_secs")
+  scoreTotal     Int?                      @map("score_total")
+  scorePercent   Decimal?                  @map("score_percent") @db.Decimal(5, 2)
+  startedAt      DateTime                  @default(now()) @map("started_at")
+  completedAt    DateTime?                 @map("completed_at")
+  durationSecs   Int?                      @map("duration_secs")
+  activeElapsedSecs Int?                      @map("active_elapsed_secs")
+
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts ObjectiveAttempt[]
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([status])
+  @@map("objective_simulations")
+}
+
+model ObjectiveAttempt {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  questionId          String   @map("question_id") @db.Uuid
+  simulationId        String?  @map("simulation_id") @db.Uuid
+  selectedAlternative String   @map("selected_alternative")
+  isCorrect           Boolean  @map("is_correct")
+  timeSpentSecs       Int?     @map("time_spent_secs")
+  meta                Json     @default("{}")
+  answeredAt          DateTime @default(now()) @map("answered_at")
+
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   ObjectiveQuestion    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  simulation ObjectiveSimulation? @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  @@unique([simulationId, questionId], name: "one_attempt_per_simulation_question")
+  @@index([userId, answeredAt(sort: Desc)])
+  @@index([questionId])
+  @@map("objective_attempts")
 }
 
 // ─── Curation ──────────────────────────────────────────────────────────────────
