@@ -17,11 +17,16 @@ export class PrismaInviteCodeRepository implements IInviteCodeRepository {
     return record ? this.toDomain(record) : null
   }
 
-  async markAsUsed(id: string, usedById: string): Promise<void> {
-    await this.prisma.inviteCode.update({
-      where: { id },
+  async markAsUsed(id: string, usedById: string): Promise<boolean> {
+    const result = await this.prisma.inviteCode.updateMany({
+      where: {
+        id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
       data: { usedById, usedAt: new Date() },
     })
+    return result.count > 0
   }
 
   async createBatch(codes: InviteCode[]): Promise<InviteCode[]> {

@@ -89,6 +89,8 @@ const mockSubscriptionRepo = {
   findByUserId: jest.fn(),
   create: jest.fn(),
   update: jest.fn(),
+  incrementGenerationsUsedIfAllowed: jest.fn(),
+  decrementGenerationsUsed: jest.fn(),
 };
 const mockQueueRepo = { create: jest.fn(), findByCaseId: jest.fn() };
 const mockCaseGeneratorService = { generate: jest.fn() };
@@ -98,6 +100,8 @@ describe("GenerateCase", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true);
+    mockSubscriptionRepo.decrementGenerationsUsed.mockResolvedValue(undefined);
     useCase = new GenerateCase(
       mockCaseRepo as any,
       mockSpecialtyRepo as any,
@@ -179,7 +183,7 @@ describe("GenerateCase", () => {
     });
     mockCaseRepo.create.mockResolvedValue(savedCase);
     mockQueueRepo.create.mockResolvedValue(undefined);
-    mockSubscriptionRepo.update.mockResolvedValue(undefined);
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true);
 
     const result = await useCase.execute(baseInput);
 
@@ -188,7 +192,7 @@ describe("GenerateCase", () => {
     expect(result.case.openingMessage).toBe(
       "Doutor, estou com uma dor no peito há 2 horas.",
     );
-    expect(mockSubscriptionRepo.update).toHaveBeenCalledTimes(1);
+    expect(mockSubscriptionRepo.incrementGenerationsUsedIfAllowed).toHaveBeenCalledWith("user-1");
   });
 
   it("rolls back generationsUsed on GENERATION_FAILED", async () => {
@@ -198,15 +202,32 @@ describe("GenerateCase", () => {
     mockCaseGeneratorService.generate.mockRejectedValue(
       new Error("OpenAI failed"),
     );
-    mockSubscriptionRepo.update.mockResolvedValue(undefined);
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true);
+    mockSubscriptionRepo.decrementGenerationsUsed.mockResolvedValue(undefined);
 
     await expect(useCase.execute(baseInput)).rejects.toMatchObject({
       code: "GENERATION_FAILED",
       statusCode: 500,
     });
 
-    expect(mockSubscriptionRepo.update).toHaveBeenCalledTimes(2);
+    expect(mockSubscriptionRepo.incrementGenerationsUsedIfAllowed).toHaveBeenCalledWith("user-1");
+    expect(mockSubscriptionRepo.decrementGenerationsUsed).toHaveBeenCalledWith("user-1");
     expect(sub.generationsUsed).toBe(5);
+  });
+
+  it("throws GENERATION_LIMIT_REACHED when atomic increment is denied", async () => {
+    mockSubscriptionRepo.findByUserId.mockResolvedValue(
+      makeSubscription("pro", 9, 10),
+    );
+    mockSpecialtyRepo.findById.mockResolvedValue(makeSpecialty());
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(false);
+
+    await expect(useCase.execute(baseInput)).rejects.toMatchObject({
+      code: "GENERATION_LIMIT_REACHED",
+      statusCode: 429,
+    });
+
+    expect(mockCaseGeneratorService.generate).not.toHaveBeenCalled();
   });
 
   it("bypasses plan check for admin role", async () => {
@@ -229,7 +250,7 @@ describe("GenerateCase", () => {
     });
     mockCaseRepo.create.mockResolvedValue(savedCase);
     mockQueueRepo.create.mockResolvedValue(undefined);
-    mockSubscriptionRepo.update.mockResolvedValue(undefined);
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true);
 
     const result = await useCase.execute({
       ...baseInput,

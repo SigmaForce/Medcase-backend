@@ -13,6 +13,7 @@ export interface SavePaymentEventParams {
 
 export interface IPaymentEventRepository {
   findByExternalId(provider: string, externalId: string): Promise<PaymentEvent | null>
+  claim(params: SavePaymentEventParams): Promise<boolean>
   save(params: SavePaymentEventParams): Promise<PaymentEvent>
   updateStatus(provider: string, externalId: string, status: string): Promise<void>
 }

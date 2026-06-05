@@ -54,7 +54,13 @@ const makeGeneratedData = () => ({
 
 const mockCaseRepo = { findAll: jest.fn(), findById: jest.fn(), create: jest.fn() }
 const mockSpecialtyRepo = { findAll: jest.fn(), findById: jest.fn() }
-const mockSubscriptionRepo = { findByUserId: jest.fn(), create: jest.fn(), update: jest.fn() }
+const mockSubscriptionRepo = {
+  findByUserId: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  incrementGenerationsUsedIfAllowed: jest.fn(),
+  decrementGenerationsUsed: jest.fn(),
+}
 const mockQueueRepo = { create: jest.fn(), findByCaseId: jest.fn() }
 const mockRevalidaCaseGeneratorService = { generate: jest.fn() }
 
@@ -63,6 +69,8 @@ describe('GenerateRevalidaCase', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true)
+    mockSubscriptionRepo.decrementGenerationsUsed.mockResolvedValue(undefined)
     useCase = new GenerateRevalidaCase(
       mockCaseRepo as never,
       mockSpecialtyRepo as never,
@@ -120,7 +128,7 @@ describe('GenerateRevalidaCase', () => {
     })
     mockCaseRepo.create.mockResolvedValue(savedCase)
     mockQueueRepo.create.mockResolvedValue(undefined)
-    mockSubscriptionRepo.update.mockResolvedValue(undefined)
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true)
 
     const result = await useCase.execute({ ...baseInput, userId: 'admin-1', role: 'admin' })
 
@@ -165,7 +173,7 @@ describe('GenerateRevalidaCase', () => {
     })
     mockCaseRepo.create.mockResolvedValue(savedCase)
     mockQueueRepo.create.mockResolvedValue(undefined)
-    mockSubscriptionRepo.update.mockResolvedValue(undefined)
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true)
 
     const result = await useCase.execute(baseInput)
 
@@ -173,7 +181,7 @@ describe('GenerateRevalidaCase', () => {
     expect(result.case.status).toBe('pending_review')
     expect(result.case.opening_message).toBe('Doutor, estou com falta de ar há algumas horas.')
     expect(result.case.message).toBe('Estação Revalida gerada e submetida para revisão.')
-    expect(mockSubscriptionRepo.update).toHaveBeenCalledTimes(1)
+    expect(mockSubscriptionRepo.incrementGenerationsUsedIfAllowed).toHaveBeenCalledWith('user-1')
     expect(mockQueueRepo.create).toHaveBeenCalledTimes(1)
   })
 
@@ -182,14 +190,28 @@ describe('GenerateRevalidaCase', () => {
     mockSubscriptionRepo.findByUserId.mockResolvedValue(sub)
     mockSpecialtyRepo.findById.mockResolvedValue(makeSpecialty())
     mockRevalidaCaseGeneratorService.generate.mockRejectedValue(new Error('OpenAI failed'))
-    mockSubscriptionRepo.update.mockResolvedValue(undefined)
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(true)
+    mockSubscriptionRepo.decrementGenerationsUsed.mockResolvedValue(undefined)
 
     await expect(useCase.execute(baseInput)).rejects.toMatchObject({
       code: 'REVALIDA_GENERATION_FAILED',
       statusCode: 500,
     })
 
-    expect(mockSubscriptionRepo.update).toHaveBeenCalledTimes(2)
-    expect(sub.generationsUsed).toBe(5)
+    expect(mockSubscriptionRepo.incrementGenerationsUsedIfAllowed).toHaveBeenCalledWith('user-1')
+    expect(mockSubscriptionRepo.decrementGenerationsUsed).toHaveBeenCalledWith('user-1')
+  })
+
+  it('throws GENERATION_LIMIT_REACHED when atomic increment is denied', async () => {
+    mockSubscriptionRepo.findByUserId.mockResolvedValue(makeSubscription('pro', 9, 10))
+    mockSpecialtyRepo.findById.mockResolvedValue(makeSpecialty())
+    mockSubscriptionRepo.incrementGenerationsUsedIfAllowed.mockResolvedValue(false)
+
+    await expect(useCase.execute(baseInput)).rejects.toMatchObject({
+      code: 'GENERATION_LIMIT_REACHED',
+      statusCode: 429,
+    })
+
+    expect(mockRevalidaCaseGeneratorService.generate).not.toHaveBeenCalled()
   })
 })

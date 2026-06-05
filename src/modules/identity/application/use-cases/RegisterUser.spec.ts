@@ -97,7 +97,7 @@ describe('RegisterUser', () => {
   it('creates trial subscription when valid invite code is provided', async () => {
     mockUserRepo.findByEmail.mockResolvedValue(null)
     mockInviteCodeRepo.findValid.mockResolvedValue({ id: 'invite-1', trialDays: 30 })
-    mockInviteCodeRepo.markAsUsed.mockResolvedValue(undefined)
+    mockInviteCodeRepo.markAsUsed.mockResolvedValue(true)
     mockEmailService.sendEmailConfirmation.mockResolvedValue(undefined)
     mockAuditLogRepo.log.mockResolvedValue(undefined)
 
@@ -113,6 +113,16 @@ describe('RegisterUser', () => {
 
     await expect(
       useCase.execute({ ...validInput, invite_code: 'BETA-INVALID' }),
+    ).rejects.toMatchObject({ code: 'INVALID_OR_EXPIRED_INVITE' })
+  })
+
+  it('throws INVALID_OR_EXPIRED_INVITE when invite is consumed concurrently', async () => {
+    mockUserRepo.findByEmail.mockResolvedValue(null)
+    mockInviteCodeRepo.findValid.mockResolvedValue({ id: 'invite-1', trialDays: 30 })
+    mockInviteCodeRepo.markAsUsed.mockResolvedValue(false)
+
+    await expect(
+      useCase.execute({ ...validInput, invite_code: 'BETA-ABC123' }),
     ).rejects.toMatchObject({ code: 'INVALID_OR_EXPIRED_INVITE' })
   })
 })

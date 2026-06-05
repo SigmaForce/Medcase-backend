@@ -8,6 +8,7 @@ import { ClinicalCase, CaseDifficulty, CaseLanguage, CountryContext } from '../.
 import { CaseGeneratorService } from '../../infrastructure/services/case-generator.service'
 import { DomainException } from '../../../../errors/domain-exception'
 import { Subscription } from '../../../subscription/domain/entities/subscription.entity'
+import { sanitizeError } from '../../../../infra/logging/sanitize-error'
 
 export interface GenerateCaseInput {
   userId: string
@@ -57,10 +58,7 @@ export class GenerateCase {
       throw new DomainException('PLAN_REQUIRED', 403)
     }
 
-    if (
-      subscription &&
-      subscription.generationsUsed >= subscription.generationsLimit
-    ) {
+    if (subscription && subscription.generationsUsed >= subscription.generationsLimit) {
       throw new DomainException('GENERATION_LIMIT_REACHED', 429, JSON.stringify({
         reset_at: subscription.usageResetAt,
       }))
@@ -72,8 +70,12 @@ export class GenerateCase {
     }
 
     if (subscription) {
-      subscription.generationsUsed += 1
-      await this.subscriptionRepo.update(subscription)
+      const incremented = await this.subscriptionRepo.incrementGenerationsUsedIfAllowed(input.userId)
+      if (!incremented) {
+        throw new DomainException('GENERATION_LIMIT_REACHED', 429, JSON.stringify({
+          reset_at: subscription.usageResetAt,
+        }))
+      }
     }
 
     let generatedData: Awaited<ReturnType<CaseGeneratorService['generate']>>
@@ -85,10 +87,13 @@ export class GenerateCase {
         countryContext: input.countryContext,
       })
     } catch (err) {
-      this.logger.error('Generation error', { userId: input.userId, specialtyId: input.specialtyId, error: err })
+      this.logger.error('Generation error', {
+        userId: input.userId,
+        specialtyId: input.specialtyId,
+        error: sanitizeError(err),
+      })
       if (subscription) {
-        subscription.generationsUsed -= 1
-        await this.subscriptionRepo.update(subscription)
+        await this.subscriptionRepo.decrementGenerationsUsed(input.userId)
       }
       throw new DomainException('GENERATION_FAILED', 500)
     }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { PrismaService } from '../../../infra/database/prisma.service'
+import { sanitizeError } from '../../../infra/logging/sanitize-error'
 
 @Injectable()
 export class CleanExpiredTokensCron {
@@ -21,7 +22,7 @@ export class CleanExpiredTokensCron {
         `Cleaned ${ev.count} email verifications, ${pr.count} password resets, ${rt.count} refresh tokens`,
       )
     } catch (err) {
-      this.logger.error('Failed to clean expired tokens', err)
+      this.logger.error('Failed to clean expired tokens', sanitizeError(err))
     }
   }
 }

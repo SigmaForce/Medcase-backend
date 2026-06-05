@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logge
 import { ZodError } from 'zod'
 import { Response } from 'express'
 import { DomainException } from '../../../errors/domain-exception'
+import { sanitizeError } from '../../logging/sanitize-error'
 
 @Catch()
 export class DomainExceptionFilter implements ExceptionFilter {
@@ -29,7 +30,7 @@ export class DomainExceptionFilter implements ExceptionFilter {
       return response.status(exception.getStatus()).json(exception.getResponse())
     }
 
-    this.logger.error('Unhandled exception', { exception })
+    this.logger.error('Unhandled exception', { exception: sanitizeError(exception) })
     return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'INTERNAL_ERROR' })
   }
 }

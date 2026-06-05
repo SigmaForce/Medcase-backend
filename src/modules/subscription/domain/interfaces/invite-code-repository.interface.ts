@@ -9,7 +9,7 @@ export interface InviteGroupSummary {
 
 export interface IInviteCodeRepository {
   findValid(code: string): Promise<InviteCode | null>
-  markAsUsed(id: string, usedById: string): Promise<void>
+  markAsUsed(id: string, usedById: string): Promise<boolean>
   createBatch(codes: InviteCode[]): Promise<InviteCode[]>
   listGroupedByLabel(): Promise<InviteGroupSummary[]>
 }

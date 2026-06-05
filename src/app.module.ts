@@ -16,6 +16,7 @@ import { NotificationModule } from './modules/notification/notification.module'
 import { ClinicalCaseModule } from './modules/clinical-case/clinical-case.module'
 import { ClinicalSessionModule } from './modules/clinical-session/clinical-session.module'
 import { CurationModule } from './modules/curation/curation.module'
+import { Phase1Module } from './modules/phase1/phase1.module'
 import { env } from './config/env'
 
 @Module({
@@ -34,6 +35,7 @@ import { env } from './config/env'
     ClinicalCaseModule,
     ClinicalSessionModule,
     CurationModule,
+    Phase1Module,
   ],
   controllers: [HealthController],
   providers: [

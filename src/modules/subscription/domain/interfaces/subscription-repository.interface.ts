@@ -12,6 +12,9 @@ export interface ISubscriptionRepository {
   findByExternalId(externalSubId: string): Promise<Subscription | null>
   findByExternalCustomer(externalCustomer: string): Promise<Subscription | null>
   update(subscription: Subscription): Promise<Subscription>
+  incrementGenerationsUsedIfAllowed(userId: string): Promise<boolean>
+  decrementGenerationsUsed(userId: string): Promise<void>
+  redeemInviteCode(subscription: Subscription, inviteCodeId: string, usedById: string): Promise<Subscription | null>
   upgrade(userId: string, params: UpgradeParams): Promise<Subscription>
   downgrade(userId: string): Promise<Subscription>
   resetUsage(userId: string): Promise<Subscription>

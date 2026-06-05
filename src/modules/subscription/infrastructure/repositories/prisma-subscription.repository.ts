@@ -69,6 +69,68 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
     return this.toDomain(record)
   }
 
+  async incrementGenerationsUsedIfAllowed(userId: string): Promise<boolean> {
+    const count = await this.prisma.$executeRaw`
+      UPDATE subscriptions
+      SET generations_used = generations_used + 1
+      WHERE user_id = ${userId}::uuid
+        AND generations_used < generations_limit
+    `
+    return count > 0
+  }
+
+  async decrementGenerationsUsed(userId: string): Promise<void> {
+    await this.prisma.$executeRaw`
+      UPDATE subscriptions
+      SET generations_used = GREATEST(generations_used - 1, 0)
+      WHERE user_id = ${userId}::uuid
+    `
+  }
+
+  async redeemInviteCode(
+    subscription: Subscription,
+    inviteCodeId: string,
+    usedById: string,
+  ): Promise<Subscription | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const invite = await tx.inviteCode.updateMany({
+        where: {
+          id: inviteCodeId,
+          usedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        data: {
+          usedById,
+          usedAt: new Date(),
+        },
+      })
+
+      if (invite.count === 0) return null
+
+      const record = await tx.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          plan: subscription.plan,
+          status: subscription.status,
+          casesLimit: subscription.casesLimit,
+          casesUsed: subscription.casesUsed,
+          generationsLimit: subscription.generationsLimit,
+          generationsUsed: subscription.generationsUsed,
+          usageResetAt: subscription.usageResetAt,
+          provider: subscription.provider,
+          externalSubId: subscription.externalSubId,
+          externalCustomer: subscription.externalCustomer,
+          trialEndsAt: subscription.trialEndsAt,
+          cancelAt: subscription.cancelAt,
+          currentPeriodEnd: subscription.currentPeriodEnd,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        },
+      })
+
+      return this.toDomain(record)
+    })
+  }
+
   async upgrade(userId: string, params: UpgradeParams): Promise<Subscription> {
     const record = await this.prisma.subscription.update({
       where: { userId },

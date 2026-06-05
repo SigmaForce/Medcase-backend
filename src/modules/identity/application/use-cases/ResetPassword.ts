@@ -10,6 +10,7 @@ import { IEmailService } from "../../domain/interfaces/email-service.interface";
 import { Password } from "../../domain/value-objects/password.vo";
 import { DomainException } from "../../../../errors/domain-exception";
 import { env } from "src/config/env";
+import { sanitizeError } from "../../../../infra/logging/sanitize-error";
 
 @Injectable()
 export class ResetPassword {
@@ -60,7 +61,7 @@ export class ResetPassword {
     try {
       await this.emailService.sendPasswordChanged({ to: user.email, fullName: user.fullName })
     } catch (err) {
-      this.logger.error("Failed to send password changed email", { userId: user.id, error: err })
+      this.logger.error("Failed to send password changed email", { userId: user.id, error: sanitizeError(err) })
     }
   }
 }
